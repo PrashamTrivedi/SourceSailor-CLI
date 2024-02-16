@@ -11,6 +11,10 @@ export function builder(yargs) {
         describe: 'Path to the directory to analyse',
         type: 'string',
     })
+    yargs.positional('p', {
+        describe: 'Path to the directory to analyse',
+        type: 'string',
+    })
     yargs.option('verbose', {
         alias: 'v',
         describe: 'Run with verbose logging',
@@ -35,8 +39,8 @@ export function builder(yargs) {
 
 export async function handler(argv) {
     const isVerbose = argv.verbose || argv.v || false
-    const useOpenAi = argv.openai || argv.o || false
-    const allowStreaming = argv.streaming || argv.s || false
+    const useOpenAi = argv.openai || argv.o || true
+    const allowStreaming = argv.streaming || argv.s || true
     if (isVerbose) {
         console.log(`Analyse the given directory structure to understand the project structure and dependencies: ${argv.path}`)
     }

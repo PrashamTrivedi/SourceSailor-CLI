@@ -1,5 +1,7 @@
 import fs from 'fs'
 import path from "path"
+import ignore from 'ignore'
+
 const pathsToIgnore = ['.git']
 export async function getDirStructure(dirPath, verbose = false) {
     const gitIgnore = fs.readFileSync(`${dirPath}/.gitignore`, 'utf8')
@@ -11,31 +13,50 @@ export async function getDirStructure(dirPath, verbose = false) {
         console.log(pathsToIgnore)
     }
 
+    const ig = ignore().add(pathsToIgnore)
 
-    const getAllFiles = dir =>
-        fs.readdirSync(dir).reduce((files, file) => {
+    function pathsToTree(paths, separator = '/') {
+        let tree = {}
+        paths.forEach(path => {
+            let pathParts = path.split(separator)
+            let currentLevel = tree
+            pathParts.forEach((part, index) => {
+                if (index === pathParts.length - 1) {
+                    if (!currentLevel['_files']) {
+                        currentLevel['_files'] = []
+                    }
+                    currentLevel['_files'].push(part)
+                } else {
+                    if (!currentLevel[part]) {
+                        currentLevel[part] = {}
+                    }
+                    currentLevel = currentLevel[part]
+                }
+            })
+        })
+        return tree;
+    }
+
+    
+    const getAllFiles = (dir) => {
+        const files = fs.readdirSync(dir).reduce((files, file) => {
             const name = path.join(dir, file)
             const isDirectory = fs.statSync(name).isDirectory()
+            const relativePath = path.relative(dirPath, name)
 
-            let shouldIgnore = false
-            const pathToCompare = name.replace(`${dirPath}/`, '')
-            for (const pattern of pathsToIgnore) {
-                // if (verbose && pattern.indexOf('node_modules') !== -1 && entry.name === 'node_modules' || entry.path.indexOf('node_modules') !== -1) {
-                //     console.log(`Matches Pattern: ${matchesPattern(pathToCompare, pattern)} against ${pattern}`)
-                // }
-                if (matchesPattern(pathToCompare, pattern)) {
-                    shouldIgnore = true
-                    break
-                }
+            if (ig.ignores(relativePath)) {
+                return files
             }
-            if (!shouldIgnore) {
-                return isDirectory ? [...files, ...getAllFiles(name)] : [...files, name]
-            } else {
-                return []
-            }
+
+            return isDirectory ? [...files, ...getAllFiles(name)] : [...files, relativePath]
         }, [])
 
-    const dirToReturn = getAllFiles(dirPath)
+        return files
+    };
+
+
+
+    const dirToReturn = pathsToTree(getAllFiles(dirPath))
 
     if (verbose) {
         console.log({dirs: JSON.stringify(dirToReturn)})
@@ -43,44 +64,6 @@ export async function getDirStructure(dirPath, verbose = false) {
 
 
     return dirToReturn
-}
-
-function walkThroughDir(dirs, path, dirToReturn, verbose) {
-    // const dirToReturn = {}
-    if (verbose) {
-        console.log({dirToReturn})
-    }
-    for (const dir of dirs) {
-        const pathToCompare = dir.path.replace(path, '')
-
-        let shouldIgnore = false
-
-        for (const pattern of pathsToIgnore) {
-            // if (verbose && pattern.indexOf('node_modules') !== -1 && entry.name === 'node_modules' || entry.path.indexOf('node_modules') !== -1) {
-            //     console.log(`Matches Pattern: ${matchesPattern(pathToCompare, pattern)} against ${pattern}`)
-            // }
-            if (matchesPattern(pathToCompare, pattern)) {
-                shouldIgnore = true
-                break
-            }
-        }
-
-        if (!shouldIgnore) {
-            const files = dirToReturn[pathToCompare] || []
-            files.push(dir.name)
-            dirToReturn[pathToCompare] = files
-
-
-            if (dir.isDirectory()) {
-                const subDirs = fs.readdirSync(`${dir.path}/${dir.name}`, {withFileTypes: true})
-
-                walkThroughDir(subDirs, dir.path, dirToReturn[pathToCompare], verbose)
-            }
-        }
-
-
-    }
-    // return dirToReturn
 }
 
 function matchesPattern(path, pattern) {
