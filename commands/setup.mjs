@@ -27,6 +27,9 @@ export function builder(yargs) {
 export function handler(argv) {
     console.log(`Setting up OpenAI API Key: ${argv.apiKey} and default model: ${argv.model}`)
     const homeDir = os.homedir()
+    if (!fs.existsSync(path.join(homeDir, '.SourceSailor'))) {
+        fs.mkdirSync(path.join(homeDir, '.SourceSailor'))
+    }
     const configFile = path.join(homeDir, '.SourceSailor', 'config.json')
     const config = {
         OPENAI_API_KEY: argv.apiKey,

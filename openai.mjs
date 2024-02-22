@@ -34,10 +34,7 @@ async function getModel(useOpenAi, isVerbose = false) {
 function getOpenAiClient(useOpenAi, isVerbose = false) {
     const config = readConfig()
 
-    if (isVerbose) {
-        console.log({config})
-        console.log({key: config.OPENAI_API_KEY})
-    }
+    
     if (!useOpenAi) {
 
         return new OpenAI({
