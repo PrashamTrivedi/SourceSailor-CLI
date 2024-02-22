@@ -2,9 +2,11 @@ export const prompts = {
     rootUnderstanding:
         `Based on the given file structure in JSON surrounded by <FileStructure> tag, 
         Please answer following questions
-        1. Is the repository a give me the names of all directoreis which can be the codebases in the monorepo?
+        1. Is the repository a monorepo give me the names of all directoreis which can be the codebases in the monorepo?
         2. If it is a single codebase, what is the programming language and framework used to build this application?
-        3. If it is a single codebase, give me the filename where dependencies are defined and entry points of the applications.
+        3. If it is a single codebase, give me the filename where dependencies are defined.
+        4. If it is a single codebase, give me the filename which can be the entry point of the application.
+        5. If it is a single codebase, guess the possible workflow of the app and give me the workflow.
        
         Please guess the programming language and framework used to build this application. 
         If you think this project is a monorepo consisting multiple codebase, you will guess the role of each directories in the codebase.
