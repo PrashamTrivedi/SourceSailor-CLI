@@ -40,21 +40,16 @@ export function builder(yargs) {
 export async function handler(argv) {
     const isVerbose = argv.verbose || argv.v || false
     const useOpenAi = argv.openai || argv.o || true
-    const allowStreaming = argv.streaming || argv.s || true
+    const allowStreaming = false
     if (isVerbose) {
         console.log(`Analyse the given directory structure to understand the project structure and dependencies: ${argv.path}`)
     }
     const directoryStructure = await getDirStructure(argv.path, isVerbose)
-    const directoryInferrence = await inferProjectDirectory(directoryStructure, useOpenAi, allowStreaming, isVerbose)
-    if (allowStreaming) {
-        for await (const part of directoryInferrence) {
-            process.stdout.write(part.choices[0]?.delta?.content || '')
-        }
-        process.stdout.write('\n')
-    } else {
+    const directoryInferrenceResponse = await inferProjectDirectory(directoryStructure, useOpenAi, allowStreaming, isVerbose)
+    const directoryInferrence = JSON.parse(directoryInferrenceResponse ?? "")
+    // const message =
+    console.log(directoryInferrence)
 
-        console.log(directoryInferrence)
-    }
 }
 export const usage = '$0 <cmd> [args]'
 

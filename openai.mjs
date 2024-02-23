@@ -34,7 +34,7 @@ async function getModel(useOpenAi, isVerbose = false) {
 function getOpenAiClient(useOpenAi, isVerbose = false) {
     const config = readConfig()
 
-    
+
     if (!useOpenAi) {
 
         return new OpenAI({
@@ -59,14 +59,14 @@ export const inferProjectDirectory = async (projectDirectory, useOpenAi = true, 
     const openai = getOpenAiClient(useOpenAi, isVerbose)
     const compatibilityMessage = [{
         role: "system",
-        content: prompts.rootUnderstanding
+        content: prompts.rootUnderstanding.prompt
+
     }, {
         role: "user",
         content: `<FileStructure>${JSON.stringify(projectDirectory)}</FileStructure>`
-
     }]
     if (isVerbose) {
-        console.log(`System Prompt: ${prompts.rootUnderstanding}`)
+        console.log(`System Prompt: ${prompts.rootUnderstanding.prompt}`)
         console.log(`User Prompt: ${JSON.stringify(projectDirectory)}`)
     }
     const tokens = await calculateTokens(compatibilityMessage)
@@ -78,21 +78,45 @@ export const inferProjectDirectory = async (projectDirectory, useOpenAi = true, 
     if (modelLimitTokens < tokens) {
         throw new Error(`Job description is too long. It has ${tokens} tokens, but the limit is ${modelLimit?.limit}`)
     }
+    const tools = [
+        {
+            type: "function",
+            function: {
+                name: prompts.rootUnderstanding.params.name,
+                parameters: prompts.rootUnderstanding.params.parameters,
+                description: prompts.rootUnderstanding.params.description
+            }
+        }
+    ]
     const model = await getModel(useOpenAi)
     const matchJson = await openai.chat.completions.create({
         model,
         messages: compatibilityMessage,
         temperature: 0,
-        stream: isStreaming
+        // stream: isStreaming,
+        tools: tools,
+        tool_choice: "auto"
     })
 
 
-    if (!isStreaming) {
-        // Handle the JSON response from the API
-        return matchJson.choices[0].message.content || undefined
-    } else {
-        return matchJson
+    //     // console.log()
+    //     return matchJson.choices[0].message?.tool_calls?.
+    //         flatMap(toolCall => toolCall?.function?.arguments)
+    // } else {
+    if (isVerbose) {
+        console.log(JSON.stringify(matchJson.choices[0], null, 2))
     }
+
+    if (matchJson.choices[0].finish_reason === 'tool_calls') {
+
+        const response = matchJson.choices[0].message?.tool_calls?.
+            flatMap(toolCall => toolCall?.function?.arguments)
+        return response?.join('')
+    }
+    // Handle the JSON response from the API
+    return matchJson.choices[0].message.content || undefined
+
+
 
 }
 
