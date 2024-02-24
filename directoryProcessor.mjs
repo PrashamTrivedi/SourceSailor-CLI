@@ -26,20 +26,29 @@ export async function getDirStructure(dirPath, verbose = false) {
         const rootFile = dirPath.split('/').pop()
         if (dirPath !== '.' && ig.ignores(`${rootFile}/`)) return {}
         const files = fs.readdirSync(dirPath)
-        const filesWithoutIgnored = files.filter(file => !ig.ignores(file))
+
+        const filesWithoutIgnored = []
+        //files.filter(file => !ig.ignores(file) && fs.statSync(fullPath).isDirectory())
         const json = {}
         if (verbose) console.log({filesWithoutIgnored})
-        json[rootFile] = filesWithoutIgnored
-        for (const file of filesWithoutIgnored) {
+        for (const file of files) {
+            if (ig.ignores(file)) continue
+
+
             const fullPath = `${dirPath}/${file}`
 
             const isDirectory = fs.statSync(fullPath).isDirectory()
             if (isDirectory) {
-                json[file] = getJsonFromDirectory(fullPath)
+                const jsonData = getJsonFromDirectory(fullPath)
+                json[fullPath] = jsonData
                 if (verbose) console.log({jsonData: json, file})
-            }
+            } else {
 
+                filesWithoutIgnored.push(file)
+            }
         }
+        const keyName = rootFile === '.' ? 'root' : rootFile
+        json[keyName] = filesWithoutIgnored
         return json
     }
     // function pathsToTree(paths, separator = '/') {
