@@ -45,21 +45,28 @@ export async function handler(argv) {
         console.log(`Analyse the given directory structure to understand the project structure and dependencies: ${argv.path}`)
     }
     const directoryStructure = await getDirStructure(argv.path, isVerbose)
-    // const directoryInferrenceResponse = await inferProjectDirectory(directoryStructure, useOpenAi, allowStreaming, isVerbose)
-    // const directoryInferrence = JSON.parse(directoryInferrenceResponse ?? "")
-    // // const message =
-    // console.log(directoryInferrence)
-    // const projectName = argv.path
-    // const monoRepoMessage = directoryInferrence?.isMonorepo ?? false ? `is a monorepo` : `is a single codebase`
-    // const framework = directoryInferrence?.framework ?? "Unknown"
-    // const programmingLanguage = directoryInferrence?.programmingLanguage ?? "Unknown"
-    // const dependenciesFile = directoryInferrence?.dependenciesFile ?? "Unknown"
-    // const entryPointFile = directoryInferrence?.entryPointFile ?? "Unknown"
-    // const workflow = directoryInferrence?.workflow ?? "Unknown"
+    const directoryInferrenceResponse = await inferProjectDirectory(directoryStructure, useOpenAi, allowStreaming, isVerbose)
+    const directoryInferrence = JSON.parse(directoryInferrenceResponse ?? "")
+    // const message =
+    console.log(directoryInferrence)
+    const projectName = argv.path
+
+    if (isVerbose) {
+        console.log({project: argv.path, directoryInferrence})
+    }
 
 
 
-    // console.log(`Analysing ${projectName}'s file structure to getting started.`)
+    console.log(`Analysing ${projectName}'s file structure to getting started.`)
+
+    const directories = []
+    if (!directoryInferrence.isMonorepo) {
+        directories.push(argv.path)
+    } else {
+        directories.push(...directoryInferrence.directories)
+    }
+
+    
 
 
 }

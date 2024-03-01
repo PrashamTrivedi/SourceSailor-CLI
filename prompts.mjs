@@ -8,7 +8,8 @@ export const prompts = {
         3. If it is a single codebase, give me the filename where dependencies are defined.
         4. If it is a single codebase, give me the filename which can be the entry point of the application.
         5. If it is a single codebase, guess the possible workflow of the app and give me the workflow.
-       
+        6. If it is a single repository, guess the tree sitter language name and give me the language name.
+
         Please guess the programming language and framework used to build this application. 
         If you think this project is a monorepo consisting multiple codebase, you will guess the role of each directories in the codebase.
         If this is not the monorepo, you will tell me which files to look to understand dependencies of given codebase. You will tell me which file or files to read to get started.`,
@@ -52,9 +53,13 @@ export const prompts = {
                     originalResponse: {
                         type: "object",
                         description: "Original response from the openai"
+                    },
+                    treeSitterLanguage: {
+                        type: "string",
+                        description: "If it is a single repository, guess the tree sitter language name and give me the language name."
                     }
                 },
-                required: ["isMonorepo", "directories", "programmingLanguage", "framework", "dependenciesFile", "entryPointFile", "workflow", "originalResponse"]
+                required: ["isMonorepo", "directories", "programmingLanguage", "framework", "dependenciesFile", "entryPointFile", "workflow", "originalResponse", "treeSitterLanguage"]
             }
         }
     },
