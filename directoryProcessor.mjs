@@ -19,37 +19,46 @@ export async function getDirStructure(dirPath, verbose = false) {
         console.log(pathsToIgnore)
     }
 
-    const ig = ignore().add(pathsToIgnore)
+    const ig = ignore({
+        allowRelativePaths: true,
+        ignoreCase: true
+    }).add(pathsToIgnore)
 
     function getJsonFromDirectory(dirPath) {
-        if (verbose) console.log({dirPath})
         const rootFile = dirPath.split('/').pop()
-        if (dirPath !== '.' && ig.ignores(`${rootFile}/`)) return {}
+        const result = {
+            name: rootFile,
+            children: []
+        }
+        const dirPathWithoutRootDir = dirPath.substring(dirPath.indexOf('/') + 1)
+
+
+
+        if (ig.ignores(`${rootFile}/`) || ig.ignores(rootFile) || ig.ignores(`${dirPathWithoutRootDir}/`)) return {}
+
         const files = fs.readdirSync(dirPath)
 
-        const filesWithoutIgnored = []
-        //files.filter(file => !ig.ignores(file) && fs.statSync(fullPath).isDirectory())
-        const json = {}
-        if (verbose) console.log({filesWithoutIgnored})
         for (const file of files) {
-            if (ig.ignores(file)) continue
+            if (ig.ignores(file)) {
+                if (verbose) console.log({ignored: file})
+                continue
+            }
 
 
             const fullPath = `${dirPath}/${file}`
 
             const isDirectory = fs.statSync(fullPath).isDirectory()
             if (isDirectory) {
-                const jsonData = getJsonFromDirectory(fullPath)
-                json[fullPath] = jsonData
-                if (verbose) console.log({jsonData: json, file})
+                const dirChildren = getJsonFromDirectory(fullPath)
+                if (dirChildren?.children?.length ?? 0 > 0) {
+                    result.children.push(dirChildren)
+                }
             } else {
 
-                filesWithoutIgnored.push(file)
+                result.children.push({name: file})
             }
         }
-        const keyName = rootFile === '.' ? 'root' : rootFile
-        json[keyName] = filesWithoutIgnored
-        return json
+        return result
     }
     // function pathsToTree(paths, separator = '/') {
     //     let tree = {}
