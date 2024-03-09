@@ -1,6 +1,7 @@
 import {getDirStructure} from "../directoryProcessor.mjs"
-import {inferProjectDirectory} from "../openai.mjs"
-
+import {inferDependency, inferProjectDirectory} from "../openai.mjs"
+import {parseTree} from "../treeParser.mjs"
+import fs from 'fs'
 export const command = 'analyse <path|p> [verbose|v] [openai|o] [streaming|s]'
 
 export const describe = 'Analyse the given directory structure to understand the project structure and dependencies'
@@ -61,12 +62,23 @@ export async function handler(argv) {
 
     const directories = []
     if (!directoryInferrence.isMonorepo) {
-        directories.push(argv.path)
+        const depenencyFile = fs.readFileSync(`${argv.path}/${directoryInferrence.dependenciesFile}`, 'utf-8')
+        const dependencyInferrence = await inferDependency(depenencyFile, directoryInferrence.workflow, useOpenAi, allowStreaming, isVerbose)
+        if (allowStreaming) {
+            for await (const chunk of dependencyInferrence) {
+                console.log(chunk)
+            }
+        } else {
+            console.log(dependencyInferrence)
+        }
+        const tree = await parseTree(`${argv.path}/${directoryInferrence.entryPointFile}`, directoryInferrence.treeSitterLanguage, isVerbose)
+        console.log(tree)
     } else {
         directories.push(...directoryInferrence.directories)
     }
 
-    
+
+
 
 
 }

@@ -56,13 +56,18 @@ export const prompts = {
                     },
                     treeSitterLanguage: {
                         type: "string",
-                        description: "If it is a single repository, guess the tree sitter language name and give me the language name."
+
+                        description: "If it is a single repository, guess the tree sitter language binding name we can use to parse the source code files. This must always be present"
                     }
                 },
                 required: ["isMonorepo", "directories", "programmingLanguage", "framework", "dependenciesFile", "entryPointFile", "workflow", "originalResponse", "treeSitterLanguage"]
             }
         }
     },
+    dependencyUnderstanding: {
+        prompt: "Here is the dependency file structure surrounded by <DependencyFile> tag. Please guess the framweorks used to build this part of application. You will also outline the role and use of each dependency file in the application. And then validate the workflow given to you in <Workflow> tag. Modify the workflow if necessary.",
+    },
+
     fileStructure:
     {
         prompt: `Based on the JSON file structure of Directory, where Directory name is surrounded by <Dir> tag and File structure is surrounded by <FileStructure> tag.

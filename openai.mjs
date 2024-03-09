@@ -120,6 +120,45 @@ export const inferProjectDirectory = async (projectDirectory, useOpenAi = true, 
 
 }
 
+export const inferDependency = async (dependencyFile, workflow, useOpenAi = true, isStreaming = false, isVerbose = false) => {
+    const openai = getOpenAiClient(useOpenAi, isVerbose)
+    const compatibilityMessage = [{
+        role: "system",
+        content: prompts.dependencyUnderstanding.prompt
+
+    }, {
+        role: "user",
+        content: `<DependencyFile>${JSON.stringify(dependencyFile)}</DependencyFile>\n<Workflow>${workflow}</Workflow>`
+    }]
+    if (isVerbose) {
+        console.log(`System Prompt: ${prompts.dependencyUnderstanding.prompt}`)
+        console.log(`User Prompt: ${JSON.stringify(dependencyFile)}`)
+    }
+    const tokens = await calculateTokens(compatibilityMessage)
+    const modelLimit = modelLimits.find(modelLimit => modelLimit.name >= 'gpt-4')
+    const modelLimitTokens = modelLimit?.limit ?? 0
+    if (isVerbose) {
+        console.log(`Model limit: ${modelLimitTokens}, Tokens: ${tokens}`)
+    }
+    if (modelLimitTokens < tokens) {
+        throw new Error(`Job description is too long. It has ${tokens} tokens, but the limit is ${modelLimit?.limit}`)
+    }
+
+    const model = await getModel(useOpenAi)
+    const dependencyInferrence = await openai.chat.completions.create({
+        model,
+        messages: compatibilityMessage,
+        temperature: 0,
+    })
+
+    if (isStreaming) {
+        return dependencyInferrence
+    } else {
+        return dependencyInferrence.choices[0].message.content
+    }
+
+}
+
 export const listModels = async (isVerbose = false) => {
 
     const openai = getOpenAiClient(true, isVerbose)
