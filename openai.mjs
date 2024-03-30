@@ -8,7 +8,7 @@ import {prompts} from "./prompts.mjs"
 import {readConfig} from "./utils.mjs"
 
 
-async function calculateTokens(messages) {
+export const calculateTokens = async (messages) => {
     const chatMessages = messages.filter(message => message.content?.length ?? 0 > 0).map(message => message.content)
     const enc = await get_encoding("cl100k_base")
     const tokens = enc.encode(chatMessages.join('\n'))
@@ -156,6 +156,71 @@ export const inferDependency = async (dependencyFile, workflow, useOpenAi = true
     } else {
         return dependencyInferrence.choices[0].message.content
     }
+
+}
+
+export const inferFileImports = async (fileContents, useOpenAi = true, isStreaming = false, isVerbose = false) => {
+    const openai = getOpenAiClient(useOpenAi, isVerbose)
+    const filePrompt = fileContents.isAst ? prompts.fileImportsAST : prompts.fileImports
+    const codeFile = fileContents.contents
+    const compatibilityMessage = [{
+        role: "system",
+        content: filePrompt.prompt
+
+    }, {
+        role: "user",
+        content: `<FileAST>${JSON.stringify(codeFile)}</FileAST>`
+    }]
+    if (isVerbose) {
+        console.log(`System Prompt: ${prompts.fileImportsAST.prompt}`)
+        console.log(`User Prompt: ${JSON.stringify(codeFile)}`)
+    }
+    const tokens = await calculateTokens(compatibilityMessage)
+    const modelLimit = modelLimits.find(modelLimit => modelLimit.name >= 'gpt-4')
+    const modelLimitTokens = modelLimit?.limit ?? 0
+    if (isVerbose) {
+        console.log(`Model limit: ${modelLimitTokens}, Tokens: ${tokens}`)
+    }
+    if (modelLimitTokens < tokens) {
+        throw new Error(`Job description is too long. It has ${tokens} tokens, but the limit is ${modelLimit?.limit}`)
+    }
+    const tools = [
+        {
+            type: "function",
+            function: {
+                name: filePrompt.params.name,
+                parameters: filePrompt.params.parameters,
+                description: filePrompt.params.description
+            }
+        }
+    ]
+    const model = await getModel(useOpenAi)
+    const matchJson = await openai.chat.completions.create({
+        model,
+        messages: compatibilityMessage,
+        temperature: 0,
+        // stream: isStreaming,
+        tools: tools,
+        tool_choice: "auto"
+    })
+
+
+    //     // console.log()
+    //     return matchJson.choices[0].message?.tool_calls?.
+    //         flatMap(toolCall => toolCall?.function?.arguments)
+    // } else {
+    if (isVerbose) {
+        console.log(JSON.stringify(matchJson.choices[0], null, 2))
+    }
+
+    if (matchJson.choices[0].finish_reason === 'tool_calls') {
+
+        const response = matchJson.choices[0].message?.tool_calls?.
+            flatMap(toolCall => toolCall?.function?.arguments)
+        return response?.join('')
+    }
+    // Handle the JSON response from the API
+    return matchJson.choices[0].message.content || undefined
 
 }
 

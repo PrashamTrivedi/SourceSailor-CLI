@@ -67,6 +67,66 @@ export const prompts = {
     dependencyUnderstanding: {
         prompt: "Here is the dependency file structure surrounded by <DependencyFile> tag. Please guess the framweorks used to build this part of application. You will also outline the role and use of each dependency file in the application. And then validate the workflow given to you in <Workflow> tag. Modify the workflow if necessary.",
     },
+    fileImports: {
+        prompt: "The text <FileStructure> tag, is a content of the code file, Give me the name of the files which are imported in this codebase and the relative path of those files.",
+        params: {
+            name: "inferImportedFiles",
+            description: "Gets following parameters, importedFiles, relativePath",
+            parameters: {
+                type: "object",
+                properties: {
+                    importedFiles: {
+                        type: "array",
+                        items: {
+                            type: "object",
+                            properties: {
+                                name: {
+                                    type: "string",
+                                    description: "Name of the file"
+                                },
+                                relativePath: {
+                                    type: "string",
+                                    description: "Relative path of the file"
+                                }
+                            },
+                            required: ["name", "relativePath"]
+                        }
+                    },
+                },
+                required: ["importedFiles"]
+            }
+        }
+    },
+    fileImportsAST: {
+        prompt: "Based on AST (Abstract Syntax Tree) of the file surrounded by <FileAST> tag. Give me the name of the files which are imported in this codebase and the relative path of those files.",
+        params: {
+            name: "inferImportedFiles",
+            description: "Gets following parameters, importedFiles, relativePath",
+            parameters: {
+                type: "object",
+                properties: {
+                    importedFiles: {
+                        type: "array",
+                        items: {
+                            type: "object",
+                            properties: {
+                                name: {
+                                    type: "string",
+                                    description: "Name of the file"
+                                },
+                                relativePath: {
+                                    type: "string",
+                                    description: "Relative path of the file"
+                                }
+                            },
+                            required: ["name", "relativePath"]
+                        }
+                    },
+                },
+                required: ["importedFiles"]
+            }
+        }
+    },
 
     fileStructure:
     {

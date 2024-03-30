@@ -1,5 +1,5 @@
 import {getDirStructure} from "../directoryProcessor.mjs"
-import {inferDependency, inferProjectDirectory} from "../openai.mjs"
+import {inferDependency, inferFileImports, inferProjectDirectory} from "../openai.mjs"
 import {parseTree} from "../treeParser.mjs"
 import fs from 'fs'
 export const command = 'analyse <path|p> [verbose|v] [openai|o] [streaming|s]'
@@ -73,6 +73,14 @@ export async function handler(argv) {
         }
         const tree = await parseTree(`${argv.path}/${directoryInferrence.entryPointFile}`, directoryInferrence.treeSitterLanguage, isVerbose)
         console.log(tree)
+        const fileImport = await inferFileImports(tree, useOpenAi, allowStreaming, isVerbose)
+        if (allowStreaming) {
+            for await (const chunk of fileImport) {
+                console.log(chunk)
+            }
+        } else {
+            console.log(fileImport)
+        }
     } else {
         directories.push(...directoryInferrence.directories)
     }
