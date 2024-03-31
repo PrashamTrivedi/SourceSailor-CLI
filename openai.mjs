@@ -51,7 +51,11 @@ async function callApiAndReturnResult(openai, model, compatibilityMessage, isStr
     }
     if (tools) {
         apiParams.tools = tools
-        apiParams.tool_choice = "auto"
+        apiParams.tool_choice = {type: "function", function: {name: tools[0].function.name}}
+        delete apiParams.stream
+    }
+    if (isVerbose) {
+        console.log(JSON.stringify(apiParams, null, 2))
     }
     const matchJson = await openai.chat.completions.create(apiParams)
     if (isVerbose) {
@@ -59,7 +63,7 @@ async function callApiAndReturnResult(openai, model, compatibilityMessage, isStr
     }
     if (isStreaming) {
         return matchJson
-    } else if (matchJson.choices[0].finish_reason === 'tool_calls') {
+    } else if (matchJson.choices[0].finish_reason === 'tool_calls' || (matchJson.choices[0].message?.tool_calls?.length ?? 0 > 0)) {
         const response = matchJson.choices[0].message?.tool_calls?.flatMap(toolCall => toolCall?.function?.arguments)
         return response?.join('')
     } else {
