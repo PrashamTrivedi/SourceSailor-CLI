@@ -128,6 +128,7 @@ async function analyseDirectoryStructure(path, isVerbose, isRoot, projectName, u
     writeAnalysis(projectName, "directoryInferrence", directoryInferrence, true)
     // const message =
     console.log("Analyzed the directory structure...")
+    console.log(`Inferred workflow: ${directoryInferrence.workflow}`)
     return {directoryInferrence, directoryStructureWithContent}
 }
 
