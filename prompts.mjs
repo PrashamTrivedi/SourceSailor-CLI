@@ -10,11 +10,11 @@ export const prompts = {
         2. If it is a single codebase, what is the programming language and framework used to build this application?
         3. If it is a single codebase, give me the filename where dependencies are defined.
         4. If it is a single codebase, give me the filename which can be the entry point of the application.
-        5. If it is a single codebase, guess the possible workflow of the app and give me the workflow.
-        6. If it is a single repository, guess the tree sitter language name and give me the language name.
+        5. If it is a single codebase, tell me the possible workflow of the app and give me the workflow.
+        6. If it is a single repository, tell me the tree sitter language name and give me the language name.
 
-        Please guess the programming language and framework used to build this application. 
-        If you think this project is a monorepo consisting multiple codebase, you will guess the role of each directories in the codebase.
+        Please tell me the programming language and framework used to build this application. 
+        If you think this project is a monorepo consisting multiple codebase, you will tell me the role of each directories in the codebase.
         If this is not the monorepo, you will tell me which files to look to understand dependencies of given codebase. You will tell me which file or files to read to get started.`,
         params: {
             description: "Gets following parameters, isMonorepo, directories, programmingLanguage, framework, dependenciesFile, entryPointFile, workflow",
@@ -55,7 +55,7 @@ export const prompts = {
                     },
                     workflow: {
                         type: "string",
-                        description: "If it is a single codebase, guess the possible workflow of the app and give me the workflow."
+                        description: "If it is a single codebase, the possible workflow of the app and give me the workflow."
                     },
                     originalResponse: {
                         type: "object",
@@ -64,7 +64,7 @@ export const prompts = {
                     treeSitterLanguage: {
                         type: "string",
 
-                        description: "If it is a single repository, guess the tree sitter language binding name we can use to parse the source code files. This must always be present"
+                        description: "If it is a single repository, the tree sitter language binding name we can use to parse the source code files. This must always be present"
                     }
                 },
                 required: ["isMonorepo", "directories", "programmingLanguage", "framework", "dependenciesFile", "lockFile", "entryPointFile", "workflow", "originalResponse", "treeSitterLanguage"]
@@ -72,7 +72,7 @@ export const prompts = {
         }
     },
     dependencyUnderstanding: {
-        prompt: "Here is the dependency file structure surrounded by <DependencyFile> tag. Please guess the framweorks used to build this part of application. You will also outline the role and use of each dependency file in the application. And then validate the workflow given to you in <Workflow> tag. Modify the workflow if necessary.",
+        prompt: "Here is the dependency file structure surrounded by <DependencyFile> tag. Tell me the framweorks used to build this part of application. You will also outline the role and use of each dependency file in the application. And then validate the workflow given to you in <Workflow> tag. Modify the workflow if necessary.",
     },
     fileImports: {
         prompt: "The text <FileStructure> tag, is a content of the code file, Give me the name of the files which are imported in this codebase and the relative path of those files.",
@@ -138,7 +138,7 @@ export const prompts = {
     fileStructure:
     {
         prompt: `Based on the JSON file structure of Directory, where Directory name is surrounded by <Dir> tag and File structure is surrounded by <FileStructure> tag.
-        Please guess the programming language and framework used to build this part of application.`},
+        Tell me the programming language and framework used to build this part of application.`},
 
     codeUnderstanding:
     {
