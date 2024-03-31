@@ -57,13 +57,13 @@ export async function getDirStructure(dirPath, verbose = false) {
                 const filePath = `${dirPath}/${file}`
                 const fileExtension = path.extname(file).toLowerCase()
 
-                const extentionsToSkipContent = ['.jpg', '.jpeg', '.png', '.gif', '.ico','.mp4', '.svg', '.pdf', '.doc', '.docx', '.xls', '.xlsx'];
+                const extentionsToSkipContent = ['.jpg', '.jpeg', '.png', '.gif', '.ico', '.mp4', '.svg', '.pdf', '.doc', '.db', '.sqlite', '.docx', '.xls', '.xlsx']
 
                 if (extentionsToSkipContent.includes(fileExtension)) {
-                    result.children.push({ name: file, content: null });
+                    result.children.push({name: file, content: null})
                 } else {
-                    const fileContent = fs.readFileSync(filePath, 'utf8');
-                    result.children.push({ name: file, content: fileContent });
+                    const fileContent = fs.readFileSync(filePath, 'utf8')
+                    result.children.push({name: file, content: fileContent})
                 }
             }
         }
