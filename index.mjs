@@ -7,6 +7,7 @@ import {inferProjectDirectory} from "./openai.mjs"
 import * as SetupCommand from './commands/setup.mjs'
 import * as DirectoryProcessor from "./commands/analyse.mjs"
 import * as ListModelsProcessor from "./commands/listModels.mjs"
+import * as ListConfigProcessor from "./commands/listConfig.mjs"
 const yargsSetup = yargs(hideBin(process.argv))
 // console.log("Hello there")
 
@@ -20,6 +21,7 @@ yargsSetup.
     .command(SetupCommand)
     .command(DirectoryProcessor)
     .command(ListModelsProcessor)
+    .command(ListConfigProcessor)
     .help()
     .alias('h', 'help')
     .demandCommand(1)
