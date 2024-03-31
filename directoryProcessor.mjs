@@ -55,9 +55,16 @@ export async function getDirStructure(dirPath, verbose = false) {
                 }
             } else {
                 const filePath = `${dirPath}/${file}`
-                const fileContent = fs.readFileSync(filePath, 'utf8')
+                const fileExtension = path.extname(file).toLowerCase()
 
-                result.children.push({name: file, content: fileContent})
+                const extentionsToSkipContent = ['.jpg', '.jpeg', '.png', '.gif', '.ico','.mp4', '.svg', '.pdf', '.doc', '.docx', '.xls', '.xlsx'];
+
+                if (extentionsToSkipContent.includes(fileExtension)) {
+                    result.children.push({ name: file, content: null });
+                } else {
+                    const fileContent = fs.readFileSync(filePath, 'utf8');
+                    result.children.push({ name: file, content: fileContent });
+                }
             }
         }
 
