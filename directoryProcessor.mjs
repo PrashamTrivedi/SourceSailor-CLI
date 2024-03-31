@@ -54,50 +54,15 @@ export async function getDirStructure(dirPath, verbose = false) {
                     result.children.push(dirChildren)
                 }
             } else {
+                const filePath = `${dirPath}/${file}`
+                const fileContent = fs.readFileSync(filePath, 'utf8')
 
-                result.children.push({name: file})
+                result.children.push({name: file, content: fileContent})
             }
         }
+
         return result
     }
-    // function pathsToTree(paths, separator = '/') {
-    //     let tree = {}
-    //     paths.forEach(path => {
-    //         let pathParts = path.split(separator)
-    //         let currentLevel = tree
-    //         pathParts.forEach((part, index) => {
-    //             if (index === pathParts.length - 1) {
-    //                 if (!currentLevel['_files']) {
-    //                     currentLevel['_files'] = []
-    //                 }
-    //                 currentLevel['_files'].push(part)
-    //             } else {
-    //                 if (!currentLevel[part]) {
-    //                     currentLevel[part] = {}
-    //                 }
-    //                 currentLevel = currentLevel[part]
-    //             }
-    //         })
-    //     })
-    //     return tree
-    // }
-
-
-    // const getAllFiles = (dir) => {
-    //     const files = fs.readdirSync(dir).reduce((files, file) => {
-    //         const name = path.join(dir, file)
-    //         const isDirectory = fs.statSync(name).isDirectory()
-    //         const relativePath = path.relative(dirPath, name)
-
-    //         if (ig.ignores(relativePath)) {
-    //             return files
-    //         }
-
-    //         return isDirectory ? [...files, ...getAllFiles(name)] : [...files, relativePath]
-    //     }, [])
-
-    //     return files
-    // }
 
 
 
