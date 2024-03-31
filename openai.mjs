@@ -97,7 +97,7 @@ export const inferProjectDirectory = async (projectDirectory, useOpenAi = true, 
         model,
         messages: compatibilityMessage,
         temperature: 0,
-        // stream: isStreaming,
+        stream: isStreaming,
         tools: tools,
         tool_choice: "auto"
     })
@@ -153,6 +153,7 @@ export const inferDependency = async (dependencyFile, workflow, useOpenAi = true
         model,
         messages: compatibilityMessage,
         temperature: 0,
+        stream: isStreaming
     })
 
     if (isStreaming) {
@@ -205,7 +206,7 @@ export const inferFileImports = async (fileContents, useOpenAi = true, isStreami
         model,
         messages: compatibilityMessage,
         temperature: 0,
-        // stream: isStreaming,
+        stream: isStreaming,
         tools: tools,
         tool_choice: "auto"
     })
@@ -228,6 +229,45 @@ export const inferFileImports = async (fileContents, useOpenAi = true, isStreami
     // Handle the JSON response from the API
     return matchJson.choices[0].message.content || undefined
 
+}
+
+export const inferCode = async (code, useOpenAi = true, isStreaming = false, isVerbose = false) => {
+    const openai = getOpenAiClient(useOpenAi, isVerbose)
+    const model = await getModel(useOpenAi)
+    const compatibilityMessage = [{
+        role: "system",
+        content: `${prompts.commonSystemPrompt.prompt}\n${prompts.codeUnderstanding.prompt}`
+
+    }, {
+        role: "user",
+        content: `<Code>${JSON.stringify(code)}</Code>`
+    }]
+    if (isVerbose) {
+        console.log(`System Prompt: ${prompts.commonSystemPrompt.prompt}\n${prompts.dependencyUnderstanding.prompt}`)
+        console.log(`User Prompt: ${JSON.stringify(code)}`)
+    }
+    const tokens = await calculateTokens(compatibilityMessage)
+    const modelLimit = modelLimits.find(modelLimit => modelLimit.name === model)
+    const modelLimitTokens = modelLimit?.limit ?? 0
+    if (isVerbose) {
+        console.log(`Model limit: ${modelLimitTokens}, Tokens: ${tokens}`)
+    }
+    if (modelLimitTokens < tokens) {
+        throw new Error(`Job description is too long. It has ${tokens} tokens, but the limit is ${modelLimit?.limit}`)
+    }
+
+    const dependencyInferrence = await openai.chat.completions.create({
+        model,
+        messages: compatibilityMessage,
+        temperature: 0,
+        stream: isStreaming
+    })
+
+    if (isStreaming) {
+        return dependencyInferrence
+    } else {
+        return dependencyInferrence.choices[0].message.content
+    }
 }
 
 export const listModels = async (isVerbose = false) => {

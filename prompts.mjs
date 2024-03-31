@@ -140,5 +140,12 @@ export const prompts = {
         prompt: `Based on the JSON file structure of Directory, where Directory name is surrounded by <Dir> tag and File structure is surrounded by <FileStructure> tag.
         Please guess the programming language and framework used to build this part of application.`},
 
+    codeUnderstanding:
+    {
+        prompt: `Based on the codebase provided to you in <Code> tag. Explain in the consise details what this codebase does. You will also outline the role and use of each file in the application.`
+    },
+    interestingCodeParts: {
+        prompts: `Based on the codebase provided to you in <Code> tag. Please list out the interesting code parts in the codebase. Simply say no if all of the code you found is a common CRUD code.`
+    }
 
 }
