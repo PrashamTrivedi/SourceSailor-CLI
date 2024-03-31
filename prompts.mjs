@@ -1,4 +1,7 @@
 export const prompts = {
+    commonSystemPrompt: {
+        prompt: `You are a senior software developer who has an experience working with almost all the mainstream programming languages. You can browse through directory structure and read the files containing a codebase. Your job is to create a report that will create an outline of the codebase. The report must include: Programming language used, framework(s) used and the functionality provided by the codebase. If you can figure out the workflows of the app you have to list them out along with relevant code lines.`
+    },
     rootUnderstanding:
     {
         prompt: `Based on the given file structure in JSON surrounded by <FileStructure> tag, 
@@ -40,7 +43,11 @@ export const prompts = {
                     },
                     dependenciesFile: {
                         type: "string",
-                        description: "If it is a single codebase, give me the filename where dependencies are defined."
+                        description: "If it is a single codebase, give me the dependency file e.g. package.json, go.mod, Gemfile, build.gradle, pubspec or podfile."
+                    },
+                    lockFile: {
+                        type: "string",
+                        description: "If it is a single codebase, give me the dependency lockfile, e.g. package-lock.json, go.sum, Gemfile.lock, pubspec.lock or podfile.lock."
                     },
                     entryPointFile: {
                         type: "string",
@@ -60,7 +67,7 @@ export const prompts = {
                         description: "If it is a single repository, guess the tree sitter language binding name we can use to parse the source code files. This must always be present"
                     }
                 },
-                required: ["isMonorepo", "directories", "programmingLanguage", "framework", "dependenciesFile", "entryPointFile", "workflow", "originalResponse", "treeSitterLanguage"]
+                required: ["isMonorepo", "directories", "programmingLanguage", "framework", "dependenciesFile", "lockFile", "entryPointFile", "workflow", "originalResponse", "treeSitterLanguage"]
             }
         }
     },

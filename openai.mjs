@@ -17,9 +17,11 @@ export const calculateTokens = async (messages) => {
 }
 async function getModel(useOpenAi, isVerbose = false) {
     const openai = getOpenAiClient(useOpenAi, isVerbose)
+    const config = readConfig()
+
     if (useOpenAi) {
         const models = await openai.models.list()
-        const gpt4 = models.data.find(model => model.id === process.env.DEFAULT_OPENAI_MODEL ?? 'gpt-4-0125-preview')
+        const gpt4 = models.data.find(model => model.id === config.DEFAULT_OPENAI_MODEL ?? process.env.DEFAULT_OPENAI_MODEL ?? 'gpt-4-0125-preview')
         if (gpt4) {
             return gpt4.id
         } else {
@@ -48,7 +50,8 @@ function getOpenAiClient(useOpenAi, isVerbose = false) {
 const modelLimits = [
     {name: 'gpt-4', limit: 8000},
     {name: 'gpt-4-32k', limit: 32000},
-    {name: 'gpt-4-0125-preview	', limit: 128000},
+    {name: 'gpt-4-0125-preview', limit: 128000},
+    {name: 'gpt-4-turbo', limit: 128000},
     {name: 'gpt-4-1106-preview	', limit: 128000},
     {name: 'gpt-4-turbo-preview	', limit: 128000},
     {name: 'gpt-3.5-turbo', limit: 4000},
@@ -57,20 +60,22 @@ const modelLimits = [
 
 export const inferProjectDirectory = async (projectDirectory, useOpenAi = true, isStreaming = false, isVerbose = false) => {
     const openai = getOpenAiClient(useOpenAi, isVerbose)
+    const model = await getModel(useOpenAi)
+
     const compatibilityMessage = [{
         role: "system",
-        content: prompts.rootUnderstanding.prompt
+        content: `${prompts.commonSystemPrompt.prompt}\n${prompts.rootUnderstanding.prompt}`
 
     }, {
         role: "user",
         content: `<FileStructure>${JSON.stringify(projectDirectory)}</FileStructure>`
     }]
     if (isVerbose) {
-        console.log(`System Prompt: ${prompts.rootUnderstanding.prompt}`)
+        console.log(`System Prompt: ${prompts.commonSystemPrompt.prompt}\n${prompts.rootUnderstanding.prompt}`)
         console.log(`User Prompt: ${JSON.stringify(projectDirectory)}`)
     }
     const tokens = await calculateTokens(compatibilityMessage)
-    const modelLimit = modelLimits.find(modelLimit => modelLimit.name >= 'gpt-4')
+    const modelLimit = modelLimits.find(modelLimit => modelLimit.name === model)
     const modelLimitTokens = modelLimit?.limit ?? 0
     if (isVerbose) {
         console.log(`Model limit: ${modelLimitTokens}, Tokens: ${tokens}`)
@@ -88,7 +93,6 @@ export const inferProjectDirectory = async (projectDirectory, useOpenAi = true, 
             }
         }
     ]
-    const model = await getModel(useOpenAi)
     const matchJson = await openai.chat.completions.create({
         model,
         messages: compatibilityMessage,
@@ -122,20 +126,21 @@ export const inferProjectDirectory = async (projectDirectory, useOpenAi = true, 
 
 export const inferDependency = async (dependencyFile, workflow, useOpenAi = true, isStreaming = false, isVerbose = false) => {
     const openai = getOpenAiClient(useOpenAi, isVerbose)
+    const model = await getModel(useOpenAi)
     const compatibilityMessage = [{
         role: "system",
-        content: prompts.dependencyUnderstanding.prompt
+        content: `${prompts.commonSystemPrompt.prompt}\n${prompts.dependencyUnderstanding.prompt}`
 
     }, {
         role: "user",
         content: `<DependencyFile>${JSON.stringify(dependencyFile)}</DependencyFile>\n<Workflow>${workflow}</Workflow>`
     }]
     if (isVerbose) {
-        console.log(`System Prompt: ${prompts.dependencyUnderstanding.prompt}`)
+        console.log(`System Prompt: ${prompts.commonSystemPrompt.prompt}\n${prompts.dependencyUnderstanding.prompt}`)
         console.log(`User Prompt: ${JSON.stringify(dependencyFile)}`)
     }
     const tokens = await calculateTokens(compatibilityMessage)
-    const modelLimit = modelLimits.find(modelLimit => modelLimit.name >= 'gpt-4')
+    const modelLimit = modelLimits.find(modelLimit => modelLimit.name === model)
     const modelLimitTokens = modelLimit?.limit ?? 0
     if (isVerbose) {
         console.log(`Model limit: ${modelLimitTokens}, Tokens: ${tokens}`)
@@ -144,7 +149,6 @@ export const inferDependency = async (dependencyFile, workflow, useOpenAi = true
         throw new Error(`Job description is too long. It has ${tokens} tokens, but the limit is ${modelLimit?.limit}`)
     }
 
-    const model = await getModel(useOpenAi)
     const dependencyInferrence = await openai.chat.completions.create({
         model,
         messages: compatibilityMessage,
@@ -161,22 +165,24 @@ export const inferDependency = async (dependencyFile, workflow, useOpenAi = true
 
 export const inferFileImports = async (fileContents, useOpenAi = true, isStreaming = false, isVerbose = false) => {
     const openai = getOpenAiClient(useOpenAi, isVerbose)
+    const model = await getModel(useOpenAi)
     const filePrompt = fileContents.isAst ? prompts.fileImportsAST : prompts.fileImports
     const codeFile = fileContents.contents
+    const userMessage = fileContents.isAst ? `<FileAST>${JSON.stringify(codeFile)}</FileAST>` : `<FileStructure>${JSON.stringify(codeFile)}</FileStructure>`
     const compatibilityMessage = [{
         role: "system",
-        content: filePrompt.prompt
+        content: `${prompts.commonSystemPrompt.prompt}\n${filePrompt.prompt}`
 
     }, {
         role: "user",
-        content: `<FileAST>${JSON.stringify(codeFile)}</FileAST>`
+        content: userMessage
     }]
     if (isVerbose) {
-        console.log(`System Prompt: ${prompts.fileImportsAST.prompt}`)
-        console.log(`User Prompt: ${JSON.stringify(codeFile)}`)
+        console.log(`System Prompt: ${prompts.commonSystemPrompt.prompt}\n${prompts.fileImportsAST.prompt}`)
+        console.log(`User Prompt: ${userMessage}`)
     }
     const tokens = await calculateTokens(compatibilityMessage)
-    const modelLimit = modelLimits.find(modelLimit => modelLimit.name >= 'gpt-4')
+    const modelLimit = modelLimits.find(modelLimit => modelLimit.name === model)
     const modelLimitTokens = modelLimit?.limit ?? 0
     if (isVerbose) {
         console.log(`Model limit: ${modelLimitTokens}, Tokens: ${tokens}`)
@@ -194,7 +200,7 @@ export const inferFileImports = async (fileContents, useOpenAi = true, isStreami
             }
         }
     ]
-    const model = await getModel(useOpenAi)
+
     const matchJson = await openai.chat.completions.create({
         model,
         messages: compatibilityMessage,
