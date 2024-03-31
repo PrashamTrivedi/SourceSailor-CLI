@@ -1,5 +1,5 @@
 import {getDirStructure} from "../directoryProcessor.mjs"
-import {calculateTokens, inferCode, inferDependency, inferFileImports, inferProjectDirectory} from "../openai.mjs"
+import {calculateTokens, inferCode, inferDependency, inferFileImports, inferInterestingCode, inferProjectDirectory} from "../openai.mjs"
 import {parseTree} from "../treeParser.mjs"
 import fs from 'fs'
 import {addAnalysisInGitIgnore, writeAnalysis} from "../utils.mjs"
@@ -119,7 +119,7 @@ export async function handler(argv) {
             console.log(`Token length of entire codebase: ${tokenLength}`)
         }
         if (tokenLength <= 128000) {
-            console.log("Codebase is small, can be inferred for a larger language model")
+            console.log("Reading Codebase and inferring code..")
             const codeInferrence = await inferCode(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose)
             let codeInferrenceResponse = ""
             if (allowStreaming) {
@@ -133,6 +133,22 @@ export async function handler(argv) {
                 console.log(codeInferrence)
                 codeInferrenceResponse = codeInferrence
             }
+            console.log("Getting some interesting parts of code..")
+            const interestingCode = await inferInterestingCode(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose)
+            let interestingCodeResponse = ""
+            if (allowStreaming) {
+                for await (const chunk of interestingCode) {
+                    const message = chunk.choices[0]?.delta.content || ""
+                    process.stdout.write(message)
+                    interestingCodeResponse += message
+                }
+                process.stdout.write("\n")
+            } else {
+                console.log(interestingCode)
+                interestingCodeResponse = interestingCode
+            }
+            // Concatenate the code inferrence and interesting code
+            codeInferrenceResponse += interestingCodeResponse
             writeAnalysis(projectName, "codeInferrence", codeInferrenceResponse)
         } else {
 

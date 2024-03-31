@@ -6,3 +6,4 @@ npm-debug.log
 yarn-error.log
 yarn-debug.log*
 steps*.md
+.SourceSailor/analysis

@@ -15,6 +15,58 @@ export const calculateTokens = async (messages) => {
     return tokens.length
 
 }
+function createPrompt(systemPrompt, userPrompt, isVerbose) {
+    const compatibilityMessage = [{
+        role: "system",
+        content: systemPrompt
+    }, {
+        role: "user",
+        content: userPrompt
+    }]
+    if (isVerbose) {
+        console.log(`System Prompt: ${systemPrompt}`)
+        console.log(`User Prompt: ${userPrompt}`)
+    }
+    return compatibilityMessage
+}
+
+async function calculateTokensAndCheckLimit(compatibilityMessage, model, isVerbose, modelLimits) {
+    const tokens = await calculateTokens(compatibilityMessage)
+    const modelLimit = modelLimits.find(modelLimit => modelLimit.name === model)
+    const modelLimitTokens = modelLimit?.limit ?? 0
+    if (isVerbose) {
+        console.log(`Model limit: ${modelLimitTokens}, Tokens: ${tokens}`)
+    }
+    if (modelLimitTokens < tokens) {
+        throw new Error(`Prompt is Too Long. It has ${tokens} tokens, but the limit is ${modelLimit?.limit}`)
+    }
+}
+
+async function callApiAndReturnResult(openai, model, compatibilityMessage, isStreaming, isVerbose, tools) {
+    const apiParams = {
+        model,
+        messages: compatibilityMessage,
+        temperature: 0,
+        stream: isStreaming
+    }
+    if (tools) {
+        apiParams.tools = tools
+        apiParams.tool_choice = "auto"
+    }
+    const matchJson = await openai.chat.completions.create(apiParams)
+    if (isVerbose) {
+        console.log(JSON.stringify(matchJson.choices[0], null, 2))
+    }
+    if (isStreaming) {
+        return matchJson
+    } else if (matchJson.choices[0].finish_reason === 'tool_calls') {
+        const response = matchJson.choices[0].message?.tool_calls?.flatMap(toolCall => toolCall?.function?.arguments)
+        return response?.join('')
+    } else {
+        return matchJson.choices[0].message.content || undefined
+    }
+}
+
 async function getModel(useOpenAi, isVerbose = false) {
     const openai = getOpenAiClient(useOpenAi, isVerbose)
     const config = readConfig()
@@ -62,27 +114,13 @@ export const inferProjectDirectory = async (projectDirectory, useOpenAi = true, 
     const openai = getOpenAiClient(useOpenAi, isVerbose)
     const model = await getModel(useOpenAi)
 
-    const compatibilityMessage = [{
-        role: "system",
-        content: `${prompts.commonSystemPrompt.prompt}\n${prompts.rootUnderstanding.prompt}`
+    const compatibilityMessage = createPrompt(
+        `${prompts.commonSystemPrompt.prompt}\n${prompts.rootUnderstanding.prompt}`,
+        `<FileStructure>${JSON.stringify(projectDirectory)}</FileStructure>`,
+        isVerbose
+    )
 
-    }, {
-        role: "user",
-        content: `<FileStructure>${JSON.stringify(projectDirectory)}</FileStructure>`
-    }]
-    if (isVerbose) {
-        console.log(`System Prompt: ${prompts.commonSystemPrompt.prompt}\n${prompts.rootUnderstanding.prompt}`)
-        console.log(`User Prompt: ${JSON.stringify(projectDirectory)}`)
-    }
-    const tokens = await calculateTokens(compatibilityMessage)
-    const modelLimit = modelLimits.find(modelLimit => modelLimit.name === model)
-    const modelLimitTokens = modelLimit?.limit ?? 0
-    if (isVerbose) {
-        console.log(`Model limit: ${modelLimitTokens}, Tokens: ${tokens}`)
-    }
-    if (modelLimitTokens < tokens) {
-        throw new Error(`Job description is too long. It has ${tokens} tokens, but the limit is ${modelLimit?.limit}`)
-    }
+    await calculateTokensAndCheckLimit(compatibilityMessage, model, isVerbose, modelLimits)
     const tools = [
         {
             type: "function",
@@ -93,33 +131,7 @@ export const inferProjectDirectory = async (projectDirectory, useOpenAi = true, 
             }
         }
     ]
-    const matchJson = await openai.chat.completions.create({
-        model,
-        messages: compatibilityMessage,
-        temperature: 0,
-        stream: isStreaming,
-        tools: tools,
-        tool_choice: "auto"
-    })
-
-
-    //     // console.log()
-    //     return matchJson.choices[0].message?.tool_calls?.
-    //         flatMap(toolCall => toolCall?.function?.arguments)
-    // } else {
-    if (isVerbose) {
-        console.log(JSON.stringify(matchJson.choices[0], null, 2))
-    }
-
-    if (matchJson.choices[0].finish_reason === 'tool_calls') {
-
-        const response = matchJson.choices[0].message?.tool_calls?.
-            flatMap(toolCall => toolCall?.function?.arguments)
-        return response?.join('')
-    }
-    // Handle the JSON response from the API
-    return matchJson.choices[0].message.content || undefined
-
+    return callApiAndReturnResult(openai, model, compatibilityMessage, isStreaming, isVerbose, tools)
 
 
 }
@@ -127,40 +139,16 @@ export const inferProjectDirectory = async (projectDirectory, useOpenAi = true, 
 export const inferDependency = async (dependencyFile, workflow, useOpenAi = true, isStreaming = false, isVerbose = false) => {
     const openai = getOpenAiClient(useOpenAi, isVerbose)
     const model = await getModel(useOpenAi)
-    const compatibilityMessage = [{
-        role: "system",
-        content: `${prompts.commonSystemPrompt.prompt}\n${prompts.dependencyUnderstanding.prompt}`
+    const compatibilityMessage = createPrompt(
+        `${prompts.commonSystemPrompt.prompt}\n${prompts.dependencyUnderstanding.prompt}`,
+        `<DependencyFile>${JSON.stringify(dependencyFile)}</DependencyFile>\n<Workflow>${workflow}</Workflow>`,
+        isVerbose
+    )
 
-    }, {
-        role: "user",
-        content: `<DependencyFile>${JSON.stringify(dependencyFile)}</DependencyFile>\n<Workflow>${workflow}</Workflow>`
-    }]
-    if (isVerbose) {
-        console.log(`System Prompt: ${prompts.commonSystemPrompt.prompt}\n${prompts.dependencyUnderstanding.prompt}`)
-        console.log(`User Prompt: ${JSON.stringify(dependencyFile)}`)
-    }
-    const tokens = await calculateTokens(compatibilityMessage)
-    const modelLimit = modelLimits.find(modelLimit => modelLimit.name === model)
-    const modelLimitTokens = modelLimit?.limit ?? 0
-    if (isVerbose) {
-        console.log(`Model limit: ${modelLimitTokens}, Tokens: ${tokens}`)
-    }
-    if (modelLimitTokens < tokens) {
-        throw new Error(`Job description is too long. It has ${tokens} tokens, but the limit is ${modelLimit?.limit}`)
-    }
+    await calculateTokensAndCheckLimit(compatibilityMessage, model, isVerbose, modelLimits)
 
-    const dependencyInferrence = await openai.chat.completions.create({
-        model,
-        messages: compatibilityMessage,
-        temperature: 0,
-        stream: isStreaming
-    })
+    return callApiAndReturnResult(openai, model, compatibilityMessage, isStreaming, isVerbose)
 
-    if (isStreaming) {
-        return dependencyInferrence
-    } else {
-        return dependencyInferrence.choices[0].message.content
-    }
 
 }
 
@@ -170,27 +158,13 @@ export const inferFileImports = async (fileContents, useOpenAi = true, isStreami
     const filePrompt = fileContents.isAst ? prompts.fileImportsAST : prompts.fileImports
     const codeFile = fileContents.contents
     const userMessage = fileContents.isAst ? `<FileAST>${JSON.stringify(codeFile)}</FileAST>` : `<FileStructure>${JSON.stringify(codeFile)}</FileStructure>`
-    const compatibilityMessage = [{
-        role: "system",
-        content: `${prompts.commonSystemPrompt.prompt}\n${filePrompt.prompt}`
 
-    }, {
-        role: "user",
-        content: userMessage
-    }]
-    if (isVerbose) {
-        console.log(`System Prompt: ${prompts.commonSystemPrompt.prompt}\n${prompts.fileImportsAST.prompt}`)
-        console.log(`User Prompt: ${userMessage}`)
-    }
-    const tokens = await calculateTokens(compatibilityMessage)
-    const modelLimit = modelLimits.find(modelLimit => modelLimit.name === model)
-    const modelLimitTokens = modelLimit?.limit ?? 0
-    if (isVerbose) {
-        console.log(`Model limit: ${modelLimitTokens}, Tokens: ${tokens}`)
-    }
-    if (modelLimitTokens < tokens) {
-        throw new Error(`Job description is too long. It has ${tokens} tokens, but the limit is ${modelLimit?.limit}`)
-    }
+    const compatibilityMessage = createPrompt(
+        `${prompts.commonSystemPrompt.prompt}\n${filePrompt.prompt}`,
+        userMessage,
+        isVerbose
+    )
+    await calculateTokensAndCheckLimit(compatibilityMessage, model, isVerbose, modelLimits)
     const tools = [
         {
             type: "function",
@@ -202,72 +176,37 @@ export const inferFileImports = async (fileContents, useOpenAi = true, isStreami
         }
     ]
 
-    const matchJson = await openai.chat.completions.create({
-        model,
-        messages: compatibilityMessage,
-        temperature: 0,
-        stream: isStreaming,
-        tools: tools,
-        tool_choice: "auto"
-    })
+    return callApiAndReturnResult(openai, model, compatibilityMessage, isStreaming, isVerbose, tools)
 
-
-    //     // console.log()
-    //     return matchJson.choices[0].message?.tool_calls?.
-    //         flatMap(toolCall => toolCall?.function?.arguments)
-    // } else {
-    if (isVerbose) {
-        console.log(JSON.stringify(matchJson.choices[0], null, 2))
-    }
-
-    if (matchJson.choices[0].finish_reason === 'tool_calls') {
-
-        const response = matchJson.choices[0].message?.tool_calls?.
-            flatMap(toolCall => toolCall?.function?.arguments)
-        return response?.join('')
-    }
-    // Handle the JSON response from the API
-    return matchJson.choices[0].message.content || undefined
 
 }
 
 export const inferCode = async (code, useOpenAi = true, isStreaming = false, isVerbose = false) => {
     const openai = getOpenAiClient(useOpenAi, isVerbose)
     const model = await getModel(useOpenAi)
-    const compatibilityMessage = [{
-        role: "system",
-        content: `${prompts.commonSystemPrompt.prompt}\n${prompts.codeUnderstanding.prompt}`
+    const compatibilityMessage = createPrompt(
+        `${prompts.commonSystemPrompt.prompt}\n${prompts.codeUnderstanding.prompt}`,
+        `<Code>${JSON.stringify(code)}</Code>`,
+        isVerbose
+    )
+    await calculateTokensAndCheckLimit(compatibilityMessage, model, isVerbose, modelLimits)
 
-    }, {
-        role: "user",
-        content: `<Code>${JSON.stringify(code)}</Code>`
-    }]
-    if (isVerbose) {
-        console.log(`System Prompt: ${prompts.commonSystemPrompt.prompt}\n${prompts.dependencyUnderstanding.prompt}`)
-        console.log(`User Prompt: ${JSON.stringify(code)}`)
-    }
-    const tokens = await calculateTokens(compatibilityMessage)
-    const modelLimit = modelLimits.find(modelLimit => modelLimit.name === model)
-    const modelLimitTokens = modelLimit?.limit ?? 0
-    if (isVerbose) {
-        console.log(`Model limit: ${modelLimitTokens}, Tokens: ${tokens}`)
-    }
-    if (modelLimitTokens < tokens) {
-        throw new Error(`Job description is too long. It has ${tokens} tokens, but the limit is ${modelLimit?.limit}`)
-    }
 
-    const dependencyInferrence = await openai.chat.completions.create({
-        model,
-        messages: compatibilityMessage,
-        temperature: 0,
-        stream: isStreaming
-    })
+    return callApiAndReturnResult(openai, model, compatibilityMessage, isStreaming, isVerbose)
 
-    if (isStreaming) {
-        return dependencyInferrence
-    } else {
-        return dependencyInferrence.choices[0].message.content
-    }
+}
+
+export const inferInterestingCode = async (code, useOpenAi = true, isStreaming = false, isVerbose = false) => {
+    const openai = getOpenAiClient(useOpenAi, isVerbose)
+    const model = await getModel(useOpenAi)
+    const compatibilityMessage = createPrompt(
+        prompts.interestingCodeParts.prompt,
+        `<Code>${JSON.stringify(code)}</Code>`,
+        isVerbose
+    )
+    await calculateTokensAndCheckLimit(compatibilityMessage, model, isVerbose, modelLimits)
+    return callApiAndReturnResult(openai, model, compatibilityMessage, isStreaming, isVerbose)
+
 }
 
 export const listModels = async (isVerbose = false) => {

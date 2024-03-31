@@ -145,7 +145,7 @@ export const prompts = {
         prompt: `Based on the codebase provided to you in <Code> tag. Explain in the consise details what this codebase does. You will also outline the role and use of each file in the application.`
     },
     interestingCodeParts: {
-        prompts: `Based on the codebase provided to you in <Code> tag. Please list out the interesting code parts in the codebase. Simply say no if all of the code you found is a common CRUD code.`
+        prompt: `You are a senior software developer who has an experience working with almost all the mainstream programming languages. You can browse through directory structure and read the files containing a codebase. Based on the codebase provided to you in <Code> tag. Please list out the interesting code parts in the codebase. Something which is not common and solving some issues uniquely. If this project doesn't have something interesting, simply say: I didn't find anything interesting in this codebase.`
     }
 
 }
