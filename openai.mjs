@@ -53,12 +53,13 @@ async function callApiAndReturnResult(openai, model, compatibilityMessage, isStr
         apiParams.tools = tools
         apiParams.tool_choice = {type: "function", function: {name: tools[0].function.name}}
         delete apiParams.stream
+        isStreaming = false
     }
     if (isVerbose) {
         console.log(JSON.stringify(apiParams, null, 2))
     }
     const matchJson = await openai.chat.completions.create(apiParams)
-    if (isVerbose) {
+    if (isVerbose && !isStreaming) {
         console.log(JSON.stringify(matchJson.choices[0], null, 2))
     }
     if (isStreaming) {
