@@ -1,8 +1,8 @@
 import {getDirStructure} from "../directoryProcessor.mjs"
 import {calculateTokens, inferCode, inferDependency, inferFileImports, inferInterestingCode, inferProjectDirectory} from "../openai.mjs"
-import {parseTree} from "../treeParser.mjs"
+import {analyseFileContents, parseTree} from "../treeParser.mjs"
 import fs from 'fs'
-import {addAnalysisInGitIgnore, writeAnalysis} from "../utils.mjs"
+import {addAnalysisInGitIgnore, readConfig, writeAnalysis, writeError} from "../utils.mjs"
 import {type} from "os"
 import {Stream} from "openai/streaming"
 export const command = 'analyse <path|p> [verbose|v] [openai|o] [streaming|s]'
@@ -48,12 +48,26 @@ export async function handler(argv) {
     if (isVerbose) {
         console.log(`Analyse the given directory structure to understand the project structure and dependencies: ${argv.path}`)
     }
+    const config = readConfig()
+
+    const rootDir = config.ANALYSIS_DIR
+
     const projectName = argv.path
-    addAnalysisInGitIgnore(projectName)
+
+    const isProjectRoot = rootDir === 'p'
+
+
+
+    if (isProjectRoot) {
+        addAnalysisInGitIgnore(projectName)
+    }
     console.log("Reading codebase structure and file...")
     const path = argv.path
     const isRoot = true
-    const {directoryInferrence, directoryStructureWithContent} = await analyseDirectoryStructure(path, isVerbose, isRoot, projectName, useOpenAi)
+    const sourceCodePath = argv.path
+    const dirToWriteAnalysis = isProjectRoot ? `${sourceCodePath}/.SourceSailor` : `${rootDir}/.SourceSailor/${projectName}`
+
+    const {directoryInferrence, directoryStructureWithContent} = await analyseDirectoryStructure(path, isVerbose, isRoot, dirToWriteAnalysis, useOpenAi, isProjectRoot)
 
     if (isVerbose) {
         console.log({project: argv.path, directoryInferrence})
@@ -64,11 +78,11 @@ export async function handler(argv) {
     console.log(`Analysing ${projectName}'s file structure to getting started.`)
 
     if (!directoryInferrence.isMonorepo) {
-        const sourceCodePath = argv.path
-        await inferDependenciesAndWriteAnalysis(sourceCodePath, directoryInferrence, useOpenAi, allowStreaming, isVerbose, projectName)
+
+        await inferDependenciesAndWriteAnalysis(sourceCodePath, directoryInferrence, useOpenAi, allowStreaming, isVerbose, dirToWriteAnalysis, isProjectRoot)
 
         const {tokenLength, directoryStructureWithoutLockFile} = await calculateCodebaseTokens(directoryInferrence, directoryStructureWithContent, isVerbose)
-        await analyzeCode(tokenLength, directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose, projectName)
+        await analyzeCode(tokenLength, directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose, sourceCodePath)
     } else {
 
         if (isVerbose) {
@@ -76,17 +90,22 @@ export async function handler(argv) {
         }
 
         for await (const directory of directoryInferrence.directories) {
+            console.log(`Analysing ${directory}'s file structure to getting started.`)
+            const sourceCodePath = `${argv.path}/${directory}`
+
+            const analysisRootDir = isProjectRoot ? `${sourceCodePath}/.SourceSailor` : `${rootDir}/.SourceSailor/${projectName}/${directory}`
             try {
-                console.log(`Analysing ${directory}'s file structure to getting started.`)
-                const sourceCodePath = `${argv.path}/${directory}`
+
                 const {directoryInferrence, directoryStructureWithContent} = await analyseDirectoryStructure(sourceCodePath, isVerbose, false, projectName, useOpenAi)
 
-                await inferDependenciesAndWriteAnalysis(sourceCodePath, directoryInferrence, useOpenAi, allowStreaming, isVerbose, projectName)
+                await inferDependenciesAndWriteAnalysis(sourceCodePath, directoryInferrence, useOpenAi, allowStreaming, isVerbose, analysisRootDir, isProjectRoot)
 
                 const {tokenLength, directoryStructureWithoutLockFile} = await calculateCodebaseTokens(directory, directoryStructureWithContent, isVerbose)
-                await analyzeCode(tokenLength, directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose, projectName)
+                await analyzeCode(tokenLength, directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose, analysisRootDir, isProjectRoot)
             } catch (error) {
-                console.error(`Error analysing ${directory}: Moving on to next directory...`)
+                const errorAnalysisSkipped = `Error analysing ${directory}: Moving on to next directory...`
+                console.error(errorAnalysisSkipped)
+                writeError(analysisRootDir, 'ReadingDir', error.stack, errorAnalysisSkipped)
                 if (isVerbose) {
                     console.error(error)
                 }
@@ -99,7 +118,7 @@ export async function handler(argv) {
 
     }
 }
-async function analyseDirectoryStructure(path, isVerbose, isRoot, projectName, useOpenAi) {
+async function analyseDirectoryStructure(path, isVerbose, isRoot, projectName, useOpenAi, isProjectRoot) {
     const directoryStructureWithContent = await getDirStructure(path, isVerbose)
 
     const directoryStructure = JSON.parse(JSON.stringify(directoryStructureWithContent))
@@ -119,8 +138,8 @@ async function analyseDirectoryStructure(path, isVerbose, isRoot, projectName, u
 
 
     if (isRoot) {
-        writeAnalysis(projectName, "directoryStructure", directoryStructure, true)
-        writeAnalysis(projectName, "directoryStructureWithFileContent", directoryStructureWithContent, true)
+        writeAnalysis(projectName, "directoryStructure", directoryStructure, true, isProjectRoot)
+        writeAnalysis(projectName, "directoryStructureWithFileContent", directoryStructureWithContent, true, isProjectRoot)
     }
     const directoryInferrenceResponse = await inferProjectDirectory(directoryStructure, useOpenAi, false, isVerbose)
     const directoryInferrence = JSON.parse(directoryInferrenceResponse ?? "")
@@ -131,11 +150,24 @@ async function analyseDirectoryStructure(path, isVerbose, isRoot, projectName, u
     console.log(`Inferred workflow: ${directoryInferrence.workflow}`)
     return {directoryInferrence, directoryStructureWithContent}
 }
+async function traverseAndAnalyze(isVerbose, node) {
+    if (node.content !== null) {
+        node.content = await analyseFileContents(isVerbose, node.content)
+    }
 
-async function analyzeCode(tokenLength, directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose, projectName) {
+    if (Array.isArray(node.children)) {
+        node.children.forEach(traverseAndAnalyze)
+    }
+}
+
+async function analyzeCode(tokenLength, directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose, projectName, isProjectRoot) {
     if (tokenLength <= 128000) {
-        await analyzeAndWriteCodeInference(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose, projectName)
+        await analyzeAndWriteCodeInference(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose, projectName, isProjectRoot)
     } else {
+
+
+        await traverseAndAnalyze(isVerbose, directoryStructureWithoutLockFile)
+
 
         // const tree = await parseTree(`${argv.path}/${directoryInferrence.entryPointFile}`, directoryInferrence.treeSitterLanguage, isVerbose)
         // console.log(tree)
@@ -150,16 +182,17 @@ async function analyzeCode(tokenLength, directoryStructureWithoutLockFile, useOp
         //     console.log(fileImport)
         // }
         console.log("This codebase is too big, but hold tight!! We are working on it.")
+        writeAnalysis(projectName, "codeTokens", `Token length of entire codebase: ${tokenLength}, path: ${projectName}`, isProjectRoot)
     }
 }
 
-async function analyzeAndWriteCodeInference(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose, projectName) {
+async function analyzeAndWriteCodeInference(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose, projectName, isProjectRoot) {
     let codeInferrenceResponse = await analyzeCodebase(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose)
     console.log("Getting some interesting parts of code..")
     let interestingCodeResponse = await analyseInterestingCode(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose)
     // Concatenate the code inferrence and interesting code
     codeInferrenceResponse += interestingCodeResponse
-    writeAnalysis(projectName, "codeInferrence", codeInferrenceResponse)
+    writeAnalysis(projectName, "codeInferrence", codeInferrenceResponse, isProjectRoot)
 }
 
 async function analyseInterestingCode(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose) {
@@ -210,8 +243,14 @@ async function calculateCodebaseTokens(directoryInferrence, directoryStructureWi
     return {tokenLength, directoryStructureWithoutLockFile}
 }
 
-async function inferDependenciesAndWriteAnalysis(sourceCodePath, directoryInferrence, useOpenAi, allowStreaming, isVerbose, projectName) {
+async function inferDependenciesAndWriteAnalysis(sourceCodePath, directoryInferrence, useOpenAi, allowStreaming, isVerbose, projectName, isProjectRoot) {
     console.log("Reading dependency file...")
+    if (isVerbose) {
+        console.log({sourceCodePath, projectName, directoryInferrence})
+    }
+    if (!directoryInferrence.dependenciesFile || directoryInferrence.dependenciesFile.trim() === '') {
+        return
+    }
     const depenencyFile = fs.readFileSync(`${sourceCodePath}/${directoryInferrence.dependenciesFile}`, 'utf-8')
     const dependencyInferrence = await inferDependency(depenencyFile, directoryInferrence.workflow, useOpenAi, allowStreaming, isVerbose)
 
@@ -230,7 +269,7 @@ async function inferDependenciesAndWriteAnalysis(sourceCodePath, directoryInferr
         console.log(dependencyInferrence)
         dependencyInferrenceResponse = dependencyInferrence
     }
-    writeAnalysis(projectName, "dependencyInferrence", dependencyInferrenceResponse)
+    writeAnalysis(projectName, "dependencyInferrence", dependencyInferrenceResponse, isProjectRoot)
 }
 
 // Find the lockfile recursively and remove it from entry
