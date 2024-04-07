@@ -5,7 +5,7 @@ export const prompts = {
     rootUnderstanding:
     {
         prompt: `Based on the given file structure in JSON surrounded by <FileStructure> tag, 
-        Please answer following questions
+        Please answer following questions.
         1. Is the repository a monorepo give me the names of all directoreis which can be the codebases in the monorepo?
         2. If it is a single codebase, what is the programming language and framework used to build this application?
         3. If it is a single codebase, give me the filename where dependencies are defined.
@@ -13,9 +13,9 @@ export const prompts = {
         5. If it is a single codebase, tell me the possible workflow of the app and give me the workflow.
         6. If it is a single repository, tell me the tree sitter language name and give me the language name.
 
-        Please tell me the programming language and framework used to build this application. 
-        If you think this project is a monorepo consisting multiple codebase, you will tell me the role of each directories in the codebase.
-        If this is not the monorepo, you will tell me which files to look to understand dependencies of given codebase. You will tell me which file or files to read to get started.`,
+        Please Tell me the programming language and framework used to build this application. 
+        If this project is a monorepo consisting multiple codebase, you will tell me the role of each directories in the codebase.
+        If this is not the monorepo, you will tell me which files to look to understand dependencies of given codebase. You will tell me which file or files to read to get started. When you don't have any information, always pass blank string.`,
         params: {
             description: "Gets following parameters, isMonorepo, directories, programmingLanguage, framework, dependenciesFile, entryPointFile, workflow",
             name: "inferLanguageAndFramework",
@@ -142,10 +142,13 @@ export const prompts = {
 
     codeUnderstanding:
     {
-        prompt: `Based on the codebase provided to you in <Code> tag. Explain in the consise details what this codebase does. You will also outline the role and use of each file in the application.`
+        prompt: `Based on the codebase provided to you in <Code> tag. Explain in the concise details what this codebase does. You will also outline the role and use of each file in the application.`
     },
     interestingCodeParts: {
         prompt: `You are a senior software developer who has an experience working with almost all the mainstream programming languages. You can browse through directory structure and read the files containing a codebase. Based on the codebase provided to you in <Code> tag. Please list out the interesting code parts in the codebase. Something which is not common and solving some issues uniquely. If this project doesn't have something interesting, simply say: I didn't find anything interesting in this codebase.`
+    },
+    breakingDownTheLargerCode:{
+        prompt:`Based on the codebase provided to you in <Codebase> tag. Break down the codebase into smaller parts and explain the role of each part in the codebase.`
     }
 
 }
