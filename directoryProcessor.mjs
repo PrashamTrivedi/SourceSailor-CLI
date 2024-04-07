@@ -4,6 +4,8 @@ import ignore from 'ignore'
 import {dir} from "console"
 
 const pathsToIgnore = ['.git']
+const extentionsToSkipContent = ['.jpg', '.jpeg', '.png', '.gif', '.ico', '.mp4', '.svg', '.pdf', '.doc', '.db', '.sqlite', '.docx', '.xls', '.xlsx']
+
 export async function getDirStructure(dirPath, verbose = false) {
 
     const isGitingore = fs.existsSync(`${dirPath}/.gitignore`)
@@ -32,14 +34,20 @@ export async function getDirStructure(dirPath, verbose = false) {
         }
         const dirPathWithoutRootDir = dirPath.substring(dirPath.indexOf('/') + 1)
 
+        let ignoreData = ig
+        // Check for .gitignore in the current directory
+        const gitignorePath = path.join(dirPath, '.gitignore')
+        if (fs.existsSync(gitignorePath)) {
+            const gitignoreContent = fs.readFileSync(gitignorePath, 'utf8')
+            ignoreData=ig.add(gitignoreContent.split('\n')) // Add new rules to the ignore object
+        }
 
-
-        if (ig.ignores(`${rootFile}/`) || ig.ignores(rootFile) || ig.ignores(`${dirPathWithoutRootDir}/`)) return {}
+        if (ignoreData.ignores(`${rootFile}/`) || ignoreData.ignores(rootFile) || ignoreData.ignores(`${dirPathWithoutRootDir}/`)) return {}
 
         const files = fs.readdirSync(dirPath)
 
         for (const file of files) {
-            if (ig.ignores(file)) {
+            if (ignoreData.ignores(file)) {
                 if (verbose) console.log({ignored: file})
                 continue
             }
@@ -57,7 +65,6 @@ export async function getDirStructure(dirPath, verbose = false) {
                 const filePath = `${dirPath}/${file}`
                 const fileExtension = path.extname(file).toLowerCase()
 
-                const extentionsToSkipContent = ['.jpg', '.jpeg', '.png', '.gif', '.ico', '.mp4', '.svg', '.pdf', '.doc', '.db', '.sqlite', '.docx', '.xls', '.xlsx']
 
                 if (extentionsToSkipContent.includes(fileExtension)) {
                     result.children.push({name: file, content: null})
