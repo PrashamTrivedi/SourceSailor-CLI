@@ -20,6 +20,12 @@ export function builder(yargs) {
         type: 'string',
         default: 'gpt-3.5-turbo'
     })
+    yargs.option('analysisDir', {
+        alias: 'a',
+        describe: 'Root directory to write the analysis. Default home directory. Use p to use the codebase directory.',
+        type: 'string',
+        default: os.homedir()
+    })
 
     return yargs
 }
@@ -31,9 +37,12 @@ export function handler(argv) {
         fs.mkdirSync(path.join(homeDir, '.SourceSailor'))
     }
     const configFile = path.join(homeDir, '.SourceSailor', 'config.json')
+    const configData = fs.readFileSync(configFile, 'utf8')
+
     const config = {
-        OPENAI_API_KEY: argv.apiKey,
-        DEFAULT_OPENAI_MODEL: argv.model
+        OPENAI_API_KEY: argv.apiKey || configData.OPENAI_API_KEY,
+        DEFAULT_OPENAI_MODEL: argv.model || configData.DEFAULT_OPENAI_MODEL,
+        ANALYSIS_DIR: argv.analysisDir || configData.ANALYSIS_DIR
     }
     fs.writeFileSync(configFile, JSON.stringify(config))
 }
