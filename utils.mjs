@@ -24,8 +24,8 @@ export function addAnalysisInGitIgnore(projectRoot) {
     }
 }
 
-export function writeAnalysis(projectRoot, analysisName, analysisContent, isJson = false) {
-    const analysisDir = path.join(projectRoot, '.SourceSailor', 'analysis')
+export function writeAnalysis(projectRoot, analysisName, analysisContent, isJson = false, isProjectRoot = false) {
+    const analysisDir = isProjectRoot ? path.join(projectRoot, '.SourceSailor', 'analysis') : path.join(projectRoot, 'analysis')
     if (!fs.existsSync(analysisDir)) {
         fs.mkdirSync(analysisDir, {recursive: true})
     }
@@ -36,4 +36,15 @@ export function writeAnalysis(projectRoot, analysisName, analysisContent, isJson
         const analysisFile = path.join(analysisDir, `${analysisName}.md`)
         fs.writeFileSync(analysisFile, analysisContent)
     }
+}
+
+export function writeError(projectRoot, errorType, errorContent, errorMssage) {
+    const errorDir = path.join(projectRoot, 'errors')
+    if (!fs.existsSync(errorDir)) {
+        fs.mkdirSync(errorDir, {recursive: true})
+    }
+    const errorFile = path.join(errorDir, `${errorType}.txt`)
+
+
+    fs.writeFileSync(errorFile, `${errorContent}\n\n${errorMssage}`)
 }
