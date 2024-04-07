@@ -13,32 +13,38 @@ export const parseTree = async (file, language, isVerbose = false) => {
 
             return {contents: fileContents, isAst: false}
         }
-        const codeParser = new parser()
-        if (!language || language.length === 0) {
-            throw new Error('Language is required to parse the file')
-        }
-        const normalizedLanguage = language.startsWith('tree-sitter') ? language : `tree-sitter-${language.toLowerCase()}`
-
         if (isVerbose) {
-            console.log(`Parsing ${file} with language: ${normalizedLanguage}`)
+            console.log(`Parsing ${file}`)
         }
-        const languageModule = await import(normalizedLanguage)
-
-        codeParser.setLanguage(languageModule.default)
-        const tree = codeParser.parse(fileContents)
-        // tree.printDotGraph()
-        const rootNode = tree.rootNode
-        return {contents: rootNode.toString(), isAst: true}
-        // const treeCursor = tree.rootNode.walk()
-
-
-        // const sourceTree = getTree(rootNode)
-
-        // return JSON.stringify(sourceTree)
+        return await analyseFileContents(language, isVerbose, fileContents)
     } catch (error) {
 
         console.error('Error reading file:', error)
     }
+}
+
+export const analyseFileContents = async (language, isVerbose, fileContents) => {
+    const codeParser = new parser()
+    if (!language || language.length === 0) {
+        throw new Error('Language is required to parse the file')
+    }
+    const normalizedLanguage = language.startsWith('tree-sitter') ? language : `tree-sitter-${language.toLowerCase()}`
+
+
+    if (isVerbose) {
+        console.log(`Parsing file with ${normalizedLanguage}`)
+    }
+    const languageModule = await import(normalizedLanguage)
+
+    codeParser.setLanguage(languageModule.default)
+    const tree = codeParser.parse(fileContents)
+    // tree.printDotGraph()
+    const rootNode = tree.rootNode
+
+
+    const sourceTree = getTree(rootNode)
+
+    return JSON.stringify(sourceTree)
 }
 
 function getTree(node) {
