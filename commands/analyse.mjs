@@ -1,10 +1,11 @@
 import {getDirStructure} from "../directoryProcessor.mjs"
-import {calculateTokens, inferCode, inferDependency, inferFileImports, inferInterestingCode, inferProjectDirectory} from "../openai.mjs"
+import {calculateTokens, inferCode, inferCodeAST, inferDependency, inferFileImports, inferInterestingCode, inferInterestingCodeAST, inferProjectDirectory} from "../openai.mjs"
 import {analyseFileContents, parseTree} from "../treeParser.mjs"
 import fs from 'fs'
 import {addAnalysisInGitIgnore, readConfig, writeAnalysis, writeError} from "../utils.mjs"
 import {type} from "os"
 import {Stream} from "openai/streaming"
+import {UnknownLanguageError, getTreeSitterFromFileName} from "../treeSitterFromFieNames.mjs"
 export const command = 'analyse <path|p> [verbose|v] [openai|o] [streaming|s]'
 
 export const describe = 'Analyse the given directory structure to understand the project structure and dependencies'
@@ -152,14 +153,27 @@ async function analyseDirectoryStructure(path, isVerbose, isRoot, projectName, u
 }
 async function traverseAndAnalyze(isVerbose, node) {
     if (node.content !== null) {
-        node.content = await analyseFileContents(isVerbose, node.content)
+        try {
+            const language = getTreeSitterFromFileName(node.name)
+            if (isVerbose) {
+                console.log(`Language for ${node.name}: ${language}`)
+            }
+            node.content = await analyseFileContents(language, isVerbose, node.content)
+        } catch (error) {
+            if (error instanceof UnknownLanguageError) {
+                console.warn(`Skipping analysis for ${node.name}: ${error.message}`)
+            } else {
+                console.error(`Error analyzing ${node.name}:`, error)
+            }
+        }
     }
 
     if (Array.isArray(node.children)) {
-        node.children.forEach(traverseAndAnalyze)
+        for (const child of node.children) {
+            await traverseAndAnalyze(isVerbose, child)
+        }
     }
 }
-
 async function analyzeCode(tokenLength, directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose, projectName, isProjectRoot) {
     if (tokenLength <= 128000) {
         await analyzeAndWriteCodeInference(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose, projectName, isProjectRoot)
@@ -169,20 +183,10 @@ async function analyzeCode(tokenLength, directoryStructureWithoutLockFile, useOp
         await traverseAndAnalyze(isVerbose, directoryStructureWithoutLockFile)
 
 
-        // const tree = await parseTree(`${argv.path}/${directoryInferrence.entryPointFile}`, directoryInferrence.treeSitterLanguage, isVerbose)
-        // console.log(tree)
-        // const fileImport = await inferFileImports(tree, useOpenAi, allowStreaming, isVerbose)
-        // if (allowStreaming) {
-        //     for await (const chunk of fileImport) {
-        //         const message = chunk.choices[0]?.delta.content || ""
-        //         process.stdout.write(message)
-        //     }
-        //     process.stdout.write("\n")
-        // } else {
-        //     console.log(fileImport)
-        // }
-        console.log("This codebase is too big, but hold tight!! We are working on it.")
-        writeAnalysis(projectName, "codeTokens", `Token length of entire codebase: ${tokenLength}, path: ${projectName}`, isProjectRoot)
+        await analyzeAndWriteCodeInferenceAST(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose, projectName, isProjectRoot)
+
+        console.log("This codebase is too big for full code analysis, but we've performed an AST analysis.")
+        writeAnalysis(projectName, "codeTokens", `Token length of entire codebase: ${tokenLength}, path: ${projectName}. AST analysis performed.`, isProjectRoot)
     }
 }
 
@@ -192,7 +196,7 @@ async function analyzeAndWriteCodeInference(directoryStructureWithoutLockFile, u
     let interestingCodeResponse = await analyseInterestingCode(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose)
     // Concatenate the code inferrence and interesting code
     codeInferrenceResponse += interestingCodeResponse
-    writeAnalysis(projectName, "codeInferrence", codeInferrenceResponse, isProjectRoot)
+    writeAnalysis(projectName, "codeInferrence", codeInferrenceResponse, false, isProjectRoot)
 }
 
 async function analyseInterestingCode(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose) {
@@ -215,6 +219,51 @@ async function analyseInterestingCode(directoryStructureWithoutLockFile, useOpen
 async function analyzeCodebase(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose) {
     console.log("Reading Codebase and inferring code..")
     const codeInferrence = await inferCode(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose)
+    let codeInferrenceResponse = ""
+    if (allowStreaming) {
+        for await (const chunk of codeInferrence) {
+            const message = chunk.choices[0]?.delta.content || ""
+            process.stdout.write(message)
+            codeInferrenceResponse += message
+        }
+        process.stdout.write("\n")
+    } else {
+        console.log(codeInferrence)
+        codeInferrenceResponse = codeInferrence
+    }
+    return codeInferrenceResponse
+}
+
+
+async function analyzeAndWriteCodeInferenceAST(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose, projectName, isProjectRoot) {
+    let codeInferrenceResponse = await analyzeCodebaseAST(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose)
+    console.log("Getting some interesting parts of code based on AST...")
+    let interestingCodeResponse = await analyseInterestingCodeAST(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose)
+    // Concatenate the code inferrence and interesting code
+    codeInferrenceResponse += interestingCodeResponse
+    writeAnalysis(projectName, "codeInferrenceAST", codeInferrenceResponse, false, isProjectRoot)
+}
+
+async function analyseInterestingCodeAST(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose) {
+    const interestingCode = await inferInterestingCodeAST(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose)
+    let interestingCodeResponse = ""
+    if (allowStreaming) {
+        for await (const chunk of interestingCode) {
+            const message = chunk.choices[0]?.delta.content || ""
+            process.stdout.write(message)
+            interestingCodeResponse += message
+        }
+        process.stdout.write("\n")
+    } else {
+        console.log(interestingCode)
+        interestingCodeResponse = interestingCode
+    }
+    return interestingCodeResponse
+}
+
+async function analyzeCodebaseAST(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose) {
+    console.log("Reading Codebase AST and inferring code...")
+    const codeInferrence = await inferCodeAST(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose)
     let codeInferrenceResponse = ""
     if (allowStreaming) {
         for await (const chunk of codeInferrence) {

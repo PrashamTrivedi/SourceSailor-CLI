@@ -200,13 +200,39 @@ export const inferCode = async (code, useOpenAi = true, isStreaming = false, isV
     return callApiAndReturnResult(openai, model, compatibilityMessage, isStreaming, isVerbose)
 
 }
-
 export const inferInterestingCode = async (code, useOpenAi = true, isStreaming = false, isVerbose = false) => {
     const openai = getOpenAiClient(useOpenAi, isVerbose)
     const model = await getModel(useOpenAi)
     const compatibilityMessage = createPrompt(
         prompts.interestingCodeParts.prompt,
         `<Code>${JSON.stringify(code)}</Code>`,
+        isVerbose
+    )
+    await calculateTokensAndCheckLimit(compatibilityMessage, model, isVerbose, modelLimits)
+    return callApiAndReturnResult(openai, model, compatibilityMessage, isStreaming, isVerbose)
+
+}
+
+export const inferCodeAST = async (codeAST, useOpenAi = true, isStreaming = false, isVerbose = false) => {
+    const openai = getOpenAiClient(useOpenAi, isVerbose)
+    const model = await getModel(useOpenAi)
+    const compatibilityMessage = createPrompt(
+        `${prompts.commonSystemPrompt.prompt}\n${prompts.codeUnderstandingAST.prompt}`,
+        `<CodeAST>${JSON.stringify(codeAST)}</CodeAST>`,
+        isVerbose
+    )
+    await calculateTokensAndCheckLimit(compatibilityMessage, model, isVerbose, modelLimits)
+
+
+    return callApiAndReturnResult(openai, model, compatibilityMessage, isStreaming, isVerbose)
+
+}
+export const inferInterestingCodeAST = async (codeAST, useOpenAi = true, isStreaming = false, isVerbose = false) => {
+    const openai = getOpenAiClient(useOpenAi, isVerbose)
+    const model = await getModel(useOpenAi)
+    const compatibilityMessage = createPrompt(
+        prompts.interestingCodePartsAST.prompt,
+        `<CodeAST>${JSON.stringify(codeAST)}</CodeAST>`,
         isVerbose
     )
     await calculateTokensAndCheckLimit(compatibilityMessage, model, isVerbose, modelLimits)

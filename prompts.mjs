@@ -6,12 +6,13 @@ export const prompts = {
     {
         prompt: `Based on the given file structure in JSON surrounded by <FileStructure> tag, 
         Please answer following questions.
-        1. Is the repository a monorepo give me the names of all directoreis which can be the codebases in the monorepo?
-        2. If it is a single codebase, what is the programming language and framework used to build this application?
-        3. If it is a single codebase, give me the filename where dependencies are defined.
-        4. If it is a single codebase, give me the filename which can be the entry point of the application.
-        5. If it is a single codebase, tell me the possible workflow of the app and give me the workflow.
-        6. If it is a single repository, tell me the tree sitter language name and give me the language name.
+        1. If this repository is a monorepo or not. A repository is not a monorepo if there is a dependency file at the root of the codebase, even if there is a folder which contains it's own dependency file. 
+        2. If the repository is a monorepo give me the names of all directoreis which can be the codebases in the monorepo?
+        3. If it is a single codebase, what is the programming language and framework used to build this application?
+        4. If it is a single codebase, give me the filename where dependencies are defined.
+        5. If it is a single codebase, give me the filename which can be the entry point of the application.
+        6. If it is a single codebase, tell me the possible workflow of the app and give me the workflow.
+        7. If it is a single repository, tell me the tree sitter language name and give me the language name.
 
         Please Tell me the programming language and framework used to build this application. 
         If this project is a monorepo consisting multiple codebase, you will tell me the role of each directories in the codebase.
@@ -147,8 +148,12 @@ export const prompts = {
     interestingCodeParts: {
         prompt: `You are a senior software developer who has an experience working with almost all the mainstream programming languages. You can browse through directory structure and read the files containing a codebase. Based on the codebase provided to you in <Code> tag. Please list out the interesting code parts in the codebase. Something which is not common and solving some issues uniquely. If this project doesn't have something interesting, simply say: I didn't find anything interesting in this codebase.`
     },
-    breakingDownTheLargerCode:{
-        prompt:`Based on the codebase provided to you in <Codebase> tag. Break down the codebase into smaller parts and explain the role of each part in the codebase.`
+    codeUnderstandingAST: {
+        prompt: `Based on the limited AST of the codebase provided to you in <CodeAST> tag, which represents the shape of the code. Explain in concise detail what this codebase does. You will also outline the role and use of each major component in the application.`
+    },
+
+    interestingCodePartsAST: {
+        prompt: `You are a senior software developer who has experience working with almost all the mainstream programming languages. Based on the limited AST of the codebase provided to you in <CodeAST> tag, which represents the shape of the code, please list out the interesting code parts or patterns in the codebase. Something which is not common and solves some issues uniquely. If this project doesn't have something interesting based on the AST, simply say: I didn't find anything particularly interesting in the structure of this codebase.`
     }
 
 }
