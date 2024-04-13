@@ -83,7 +83,8 @@ export async function handler(argv) {
         await inferDependenciesAndWriteAnalysis(sourceCodePath, directoryInferrence, useOpenAi, allowStreaming, isVerbose, dirToWriteAnalysis, isProjectRoot)
 
         const {tokenLength, directoryStructureWithoutLockFile} = await calculateCodebaseTokens(directoryInferrence, directoryStructureWithContent, isVerbose)
-        await analyzeCode(tokenLength, directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose, sourceCodePath)
+        await analyzeCode(tokenLength, directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose, sourceCodePath, isProjectRoot)
+        await updateReadme(projectName, sourceCodePath, isProjectRoot)
     } else {
 
         if (isVerbose) {
@@ -97,7 +98,7 @@ export async function handler(argv) {
             const analysisRootDir = isProjectRoot ? `${sourceCodePath}/.SourceSailor` : `${rootDir}/.SourceSailor/${projectName}/${directory}`
             try {
 
-                const {directoryInferrence, directoryStructureWithContent} = await analyseDirectoryStructure(sourceCodePath, isVerbose, false, projectName, useOpenAi)
+                const {directoryInferrence, directoryStructureWithContent} = await analyseDirectoryStructure(sourceCodePath, isVerbose, false, analysisRootDir, useOpenAi, isProjectRoot)
 
                 await inferDependenciesAndWriteAnalysis(sourceCodePath, directoryInferrence, useOpenAi, allowStreaming, isVerbose, analysisRootDir, isProjectRoot)
 
@@ -113,11 +114,17 @@ export async function handler(argv) {
             }
         }
 
-
+        await updateMonoRepoReadme(projectName, sourceCodePath, isProjectRoot)
 
 
 
     }
+}
+
+async function updateReadme(projectName, sourceCodePath, isProjectRoot) {
+}
+
+async function updateMonoRepoReadme(projectName, sourceCodePath, isProjectRoot) {
 }
 async function analyseDirectoryStructure(path, isVerbose, isRoot, projectName, useOpenAi, isProjectRoot) {
     const directoryStructureWithContent = await getDirStructure(path, isVerbose)
@@ -145,7 +152,8 @@ async function analyseDirectoryStructure(path, isVerbose, isRoot, projectName, u
     const directoryInferrenceResponse = await inferProjectDirectory(directoryStructure, useOpenAi, false, isVerbose)
     const directoryInferrence = JSON.parse(directoryInferrenceResponse ?? "")
 
-    writeAnalysis(projectName, "directoryInferrence", directoryInferrence, true)
+    console.log({isProjectRoot, projectName, directoryInferrence})
+    writeAnalysis(projectName, "directoryInferrence", directoryInferrence, true, isProjectRoot)
     // const message =
     console.log("Analyzed the directory structure...")
     console.log(`Inferred workflow: ${directoryInferrence.workflow}`)

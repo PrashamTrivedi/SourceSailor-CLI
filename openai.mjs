@@ -240,6 +240,32 @@ export const inferInterestingCodeAST = async (codeAST, useOpenAi = true, isStrea
 
 }
 
+export const generateReadme = async (directoryStructure, dependencyInference, codeInference, useOpenAi = true, isStreaming = false, isVerbose = false) => {
+    const openai = getOpenAiClient(useOpenAi, isVerbose)
+    const model = await getModel(useOpenAi)
+    const compatibilityMessage = createPrompt(
+        prompts.readmePrompt.prompt,
+        `<DirectoryStructure>${JSON.stringify(directoryStructure)}</DirectoryStructure>\n<DependencyInferrence>${JSON.stringify(dependencyInference)}</DependencyInferrence>\n<CodeInferrence>${JSON.stringify(codeInference)}</CodeInferrence>`,
+        isVerbose
+    )
+    await calculateTokensAndCheckLimit(compatibilityMessage, model, isVerbose, modelLimits)
+
+    return callApiAndReturnResult(openai, model, compatibilityMessage, isStreaming, isVerbose)
+}
+
+export const generateMonorepoReadme = async (monorepoInferrenceInfo, useOpenAi = true, isStreaming = false, isVerbose = false) => {
+    const openai = getOpenAiClient(useOpenAi, isVerbose)
+    const model = await getModel(useOpenAi)
+    const compatibilityMessage = createPrompt(
+        prompts.consolidatedInferrenceForMonoRepo.prompt,
+        `<MonoRepoInferrence>${JSON.stringify(monorepoInferrenceInfo)}</MonoRepoInferrence>`,
+        isVerbose
+    )
+    await calculateTokensAndCheckLimit(compatibilityMessage, model, isVerbose, modelLimits)
+
+    return callApiAndReturnResult(openai, model, compatibilityMessage, isStreaming, isVerbose)
+}
+
 export const listModels = async (isVerbose = false) => {
 
     const openai = getOpenAiClient(true, isVerbose)
