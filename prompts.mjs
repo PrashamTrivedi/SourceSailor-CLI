@@ -146,14 +146,22 @@ export const prompts = {
         prompt: `Based on the codebase provided to you in <Code> tag. Explain in the concise details what this codebase does. You will also outline the role and use of each file in the application.`
     },
     interestingCodeParts: {
-        prompt: `You are a senior software developer who has an experience working with almost all the mainstream programming languages. You can browse through directory structure and read the files containing a codebase. Based on the codebase provided to you in <Code> tag. Please list out the interesting code parts in the codebase. Something which is not common and solving some issues uniquely. If this project doesn't have something interesting, simply say: I didn't find anything interesting in this codebase.`
+        prompt: `You are a senior software developer who has an experience working with almost all the mainstream programming languages. You can browse through directory structure and read the files containing a codebase. Based on the codebase provided to you in <Code> tag. Please list out the interesting code parts in the codebase. The interesting part is a part of code, which is not common CRUD and solving some issues uniquely. If this project doesn't have something interesting, simply say: I didn't find anything interesting in this codebase.`
     },
     codeUnderstandingAST: {
         prompt: `Based on the limited AST of the codebase provided to you in <CodeAST> tag, which represents the shape of the code. Explain in concise detail what this codebase does. You will also outline the role and use of each major component in the application.`
     },
 
     interestingCodePartsAST: {
-        prompt: `You are a senior software developer who has experience working with almost all the mainstream programming languages. Based on the limited AST of the codebase provided to you in <CodeAST> tag, which represents the shape of the code, please list out the interesting code parts or patterns in the codebase. Something which is not common and solves some issues uniquely. If this project doesn't have something interesting based on the AST, simply say: I didn't find anything particularly interesting in the structure of this codebase.`
+        prompt: `You are a senior software developer who has experience working with almost all the mainstream programming languages. Based on the limited AST of the codebase provided to you in <CodeAST> tag, which represents the shape of the code, please list out the interesting code parts or patterns in the codebase. The interesting part is a part of code, which is not common CRUD and solving some issues uniquely.  If this project doesn't have something interesting based on the AST, simply say: I didn't find anything particularly interesting in the structure of this codebase.`
+    },
+
+    consolidatedInferrenceForMonoRepo: {
+        prompt: `You have the inferrence information for all the repos of given monorepo, surrounded by <MonoRepoInferrence> tag. Based on this, generate a following sections for each repo in the monorepo for readme file. The sections must be: About, Installation and Usage, About the Code. Only return relevant markdown for the sections.`
+    },
+
+    readmePrompt: {
+        prompt: `You have Directory Structure surrounded by <DirectoryStructure> tag,dependency Inferrence surrounded by <DependencyInferrence> and code inferrence report surrounded by <CodeInferrence> tag. Generate following sections for readme file based on the given information. The sections must be: About, Installation and Usage, About the Code. Only return relevant markdown for the sections.`
     }
 
 }
