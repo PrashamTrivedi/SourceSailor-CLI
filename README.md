@@ -126,4 +126,4 @@ The SourceSailor-CLI tool is structured around several key components, each serv
 - Use the report as RAG. :bulb: (Highly speculative)
 - Use CLI decorators like colors and other decorators
 - Customised additional ignore list, AKA passing those files like we pass in gitignore
-- (COMING SOONish) NPM Package
+- (Done) [NPM Package](https://www.npmjs.com/package/sourcesailor?activeTab=readme)
