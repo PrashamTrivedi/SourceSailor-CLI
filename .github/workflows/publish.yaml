@@ -14,13 +14,13 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Get new version
       id: get-version
       run: |
         version=$(jq -r .version package.json)
-        echo "::set-output name=version::$version"
+        run: echo "version=$version" >> $GITHUB_OUTPUT
 
     - name: Check if tag exists
       id: check-tag
@@ -35,8 +35,8 @@ jobs:
     - name: Create tag
       if: steps.check-tag.outputs.exists == 'false'
       run: |
-        git config user.name "GitHub Actions"
-        git config user.email "github-actions@users.noreply.github.com"
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
         git tag -a "v${{ steps.get-version.outputs.version }}" -m "Release v${{ steps.get-version.outputs.version }}"
         git push origin "v${{ steps.get-version.outputs.version }}"
   
