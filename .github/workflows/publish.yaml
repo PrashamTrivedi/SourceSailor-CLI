@@ -27,9 +27,9 @@ jobs:
       run: |
         git fetch --tags
         if git rev-parse "refs/tags/v${{ steps.get-version.outputs.version }}" >/dev/null 2>&1; then
-          echo "::set-output name=exists::true"
+          echo "exists=true" >> $GITHUB_OUTPUT
         else
-          echo "::set-output name=exists::false"
+          echo "exists=false" >> $GITHUB_OUTPUT
         fi
 
     - name: Create tag
@@ -40,8 +40,18 @@ jobs:
         git tag -a "v${{ steps.get-version.outputs.version }}" -m "Release v${{ steps.get-version.outputs.version }}"
         git push origin "v${{ steps.get-version.outputs.version }}"
   
-    - name: Publish To NPM
+    - name: Setup NodeJS
       if: steps.check-tag.outputs.exists == 'false'
+      uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          registry-url: 'https://registry.npmjs.org'
+    - name: Run NPM CI
+      if: steps.check-tag.outputs.exists == 'false'
+      run: npm ci
+      
+    - name: Publish To NPM
+      if: steps.check-tag.outputs.exists == 'false' 
       run: npm publish
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
