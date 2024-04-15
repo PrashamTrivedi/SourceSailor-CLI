@@ -1,6 +1,6 @@
 export const prompts = {
     commonSystemPrompt: {
-        prompt: `You are a senior software developer who has an experience working with almost all the mainstream programming languages. You can browse through directory structure and read the files containing a codebase. Your job is to create a report that will create an outline of the codebase. The report must include: Programming language used, framework(s) used and the functionality provided by the codebase. If you can figure out the workflows of the app you have to list them out along with relevant code lines.`
+        prompt: `You are a senior software developer who has an experience working with almost all the mainstream programming languages. You can browse through directory structure and read the files containing a codebase. Your job is to create a report that will help a developer who is getting started with this codebase. To help the developer, you will create a report which must include: Programming language used, framework(s) used and the functionality provided by the codebase. If you can figure out the workflows of the app you have to list them out along with relevant code lines.`
     },
     rootUnderstanding:
     {
@@ -146,14 +146,14 @@ export const prompts = {
         prompt: `Based on the codebase provided to you in <Code> tag. Explain in the concise details what this codebase does. You will also outline the role and use of each file in the application.`
     },
     interestingCodeParts: {
-        prompt: `You are a senior software developer who has an experience working with almost all the mainstream programming languages. You can browse through directory structure and read the files containing a codebase. Based on the codebase provided to you in <Code> tag. Please list out the interesting code parts in the codebase. The interesting part is a part of code, which is not common CRUD and solving some issues uniquely. If this project doesn't have something interesting, simply say: I didn't find anything interesting in this codebase.`
+        prompt: `You are a senior software developer who has an experience working with almost all the mainstream programming languages. Based on the codebase provided to you in <Code> tag. List out the interesting parts of code. The definition of interesting part is, The interesting code is the code which is not common CRUD, it solves some issues uniquely. If this project doesn't have something interesting, simply say: I didn't find anything interesting in this codebase.`
     },
     codeUnderstandingAST: {
         prompt: `Based on the limited AST of the codebase provided to you in <CodeAST> tag, which represents the shape of the code. Explain in concise detail what this codebase does. You will also outline the role and use of each major component in the application.`
     },
 
     interestingCodePartsAST: {
-        prompt: `You are a senior software developer who has experience working with almost all the mainstream programming languages. Based on the limited AST of the codebase provided to you in <CodeAST> tag, which represents the shape of the code, please list out the interesting code parts or patterns in the codebase. The interesting part is a part of code, which is not common CRUD and solving some issues uniquely.  If this project doesn't have something interesting based on the AST, simply say: I didn't find anything particularly interesting in the structure of this codebase.`
+        prompt: `You are a senior software developer who has experience working with almost all the mainstream programming languages. Based on the limited AST of the codebase provided to you in <CodeAST> tag, which represents the shape of the code, list out the interesting code parts of code. The definition of interesting part is, The interesting code is the code which is not common CRUD and solving some issues uniquely.  If this project doesn't have something interesting based on the AST, simply say: I didn't find anything particularly interesting in the structure of this codebase.`
     },
 
     consolidatedInferrenceForMonoRepo: {

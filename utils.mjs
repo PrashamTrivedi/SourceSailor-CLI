@@ -48,3 +48,25 @@ export function writeError(projectRoot, errorType, errorContent, errorMssage) {
 
     fs.writeFileSync(errorFile, `${errorContent}\n\n${errorMssage}`)
 }
+
+export function getAnalysis(projectRoot, isProjectRoot) {
+    const analysis = {}
+    const analysisDir = isProjectRoot ? path.join(projectRoot, '.SourceSailor', 'analysis') : path.join(projectRoot, 'analysis')
+    if (!fs.existsSync(analysisDir)) {
+        return analysis
+    }
+    const entries = fs.readdirSync(analysisDir)
+
+    for (const entry of entries) {
+        const fullPath = path.join(analysisDir, entry)
+        const isDirectory = fs.statSync(fullPath).isDirectory()
+
+        const fileName = path.basename(entry, path.extname(entry))
+        if (isDirectory) {
+            analysis[fileName] = getAnalysis(fullPath, false)
+        } else {
+            analysis[fileName] = fs.readFileSync(fullPath, 'utf-8')
+        }
+    }
+    return analysis
+}

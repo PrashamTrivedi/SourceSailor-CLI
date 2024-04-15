@@ -9,7 +9,7 @@ import * as DirectoryProcessor from "./commands/analyse.mjs"
 import * as ListModelsProcessor from "./commands/listModels.mjs"
 import * as ListConfigProcessor from "./commands/listConfig.mjs"
 import * as UpdateConfigProcessor from "./commands/updateConfig.mjs"
-
+import * as PrepareReportProcessor from "./commands/prepareReport.mjs"
 
 
 const yargsSetup = yargs(hideBin(process.argv))
@@ -27,6 +27,7 @@ yargsSetup.
     .command(ListModelsProcessor)
     .command(ListConfigProcessor)
     .command(UpdateConfigProcessor)
+    .command(PrepareReportProcessor)
     .help()
     .alias('h', 'help')
     .demandCommand(1)
