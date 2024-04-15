@@ -78,7 +78,7 @@ async function getModel(useOpenAi, isVerbose = false) {
 
     if (useOpenAi) {
         const models = await openai.models.list()
-        const gpt4 = models.data.find(model => model.id === config.DEFAULT_OPENAI_MODEL ?? process.env.DEFAULT_OPENAI_MODEL ?? 'gpt-4-0125-preview')
+        const gpt4 = models.data.find(model => model.id === config.DEFAULT_OPENAI_MODEL ?? process.env.DEFAULT_OPENAI_MODEL ?? 'gpt-4-preview')
         if (gpt4) {
             return gpt4.id
         } else {
@@ -109,8 +109,8 @@ const modelLimits = [
     {name: 'gpt-4-32k', limit: 32000},
     {name: 'gpt-4-0125-preview', limit: 128000},
     {name: 'gpt-4-turbo', limit: 128000},
-    {name: 'gpt-4-1106-preview	', limit: 128000},
-    {name: 'gpt-4-turbo-preview	', limit: 128000},
+    {name: 'gpt-4-1106-preview', limit: 128000},
+    {name: 'gpt-4-turbo-preview', limit: 128000},
     {name: 'gpt-3.5-turbo', limit: 4000},
     {name: 'gpt-3.5-turbo-16k', limit: 16000}
 ]

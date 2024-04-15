@@ -13,13 +13,12 @@ export const describe = 'Analyse the given directory structure to understand the
 export function builder(yargs) {
 
     yargs.positional('path', {
+        alias: 'p',
+
         describe: 'Path to the directory to analyse',
         type: 'string',
     })
-    yargs.positional('p', {
-        describe: 'Path to the directory to analyse',
-        type: 'string',
-    })
+
     yargs.option('verbose', {
         alias: 'v',
         describe: 'Run with verbose logging',
@@ -83,7 +82,7 @@ export async function handler(argv) {
         await inferDependenciesAndWriteAnalysis(sourceCodePath, directoryInferrence, useOpenAi, allowStreaming, isVerbose, dirToWriteAnalysis, isProjectRoot)
 
         const {tokenLength, directoryStructureWithoutLockFile} = await calculateCodebaseTokens(directoryInferrence, directoryStructureWithContent, isVerbose)
-        await analyzeCode(tokenLength, directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose, sourceCodePath, isProjectRoot)
+        await analyzeCode(tokenLength, directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose, dirToWriteAnalysis, isProjectRoot)
         await updateReadme(projectName, sourceCodePath, isProjectRoot)
     } else {
 
