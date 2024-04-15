@@ -1,5 +1,8 @@
 # SourceSailor
 
+[![NPM Version](https://img.shields.io/npm/v/sourcesailor.svg?logo=npm&label=sourcesailor)](https://www.npmjs.com/package/sourcesailor?activeTab=readme)
+
+
 Navigate through your source code with ease.
 
 
