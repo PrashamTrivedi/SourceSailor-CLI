@@ -1,0 +1,48 @@
+name: Create Tag on Version Change
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'package.json'
+
+jobs:
+  create-tag:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Get new version
+      id: get-version
+      run: |
+        version=$(jq -r .version package.json)
+        echo "::set-output name=version::$version"
+
+    - name: Check if tag exists
+      id: check-tag
+      run: |
+        git fetch --tags
+        if git rev-parse "refs/tags/v${{ steps.get-version.outputs.version }}" >/dev/null 2>&1; then
+          echo "::set-output name=exists::true"
+        else
+          echo "::set-output name=exists::false"
+        fi
+
+    - name: Create tag
+      if: steps.check-tag.outputs.exists == 'false'
+      run: |
+        git config --global user.email "actions@github.com"
+        git config --global user.name "GitHub Actions"
+        git tag -a "v${{ steps.get-version.outputs.version }}" -m "Release v${{ steps.get-version.outputs.version }}"
+        git push origin "v${{ steps.get-version.outputs.version }}"
+  
+    - name: Publish To NPM
+      if: steps.check-tag.outputs.exists == 'false'
+      run: npm publish
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
+
+      
