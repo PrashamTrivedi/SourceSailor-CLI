@@ -9,7 +9,7 @@ on:
       - '.github/workflows/publish.yaml'
 
 jobs:
-  create-tag:
+  create-tag-and-release:
     runs-on: ubuntu-latest
 
     steps:
@@ -43,13 +43,14 @@ jobs:
     - name: Setup NodeJS
       if: steps.check-tag.outputs.exists == 'false'
       uses: actions/setup-node@v4
-        with:
-          node-version: '20.x'
-          registry-url: 'https://registry.npmjs.org'
+      with:
+        node-version: '20.x'
+        registry-url: 'https://registry.npmjs.org'
+      
     - name: Run NPM CI
       if: steps.check-tag.outputs.exists == 'false'
       run: npm ci
-      
+
     - name: Publish To NPM
       if: steps.check-tag.outputs.exists == 'false' 
       run: npm publish
