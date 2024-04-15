@@ -11,12 +11,96 @@ SourceSailor-CLI is a sophisticated command-line interface (CLI) tool designed f
 
 To get started with SourceSailor-CLI, ensure you have Node.js installed on your system. Follow these steps to install and use the tool:
 
-1. **Clone the repository** to your local machine using Git.
-2. **Navigate to the project directory** where the `package.json` file is located.
-3. **Run `npm install`** to install the necessary dependencies.
-4. **Set up the CLI** with your OpenAI API key using the `setup.mjs` command. This step is crucial for enabling the tool to perform code analysis.
-5. **Use the CLI commands** to analyze your projects, manage configurations, and generate reports. For example, you can start an analysis with the `analyse.mjs` command followed by the path to your project directory.
+### Installation
 
+Install this CLI using 
+
+```bash
+npm install -g sourcesailor
+```
+
+### Commands
+
+#### Setup
+
+Set up the OpenAI API key and default model for SourceSailor:
+
+```bash
+SourceSailor setup --apiKey <your_api_key> [--model <model_name>] [--analysisDir <directory>]
+```
+
+Options:
+- `--apiKey`, `-k`: OpenAI API Key (required)
+- `--model`, `-m`: OpenAI Model (default: 'gpt-3.5-turbo')
+- `--analysisDir`, `-a`: Root directory to write the analysis. Default is the home directory. Use 'p' to use the codebase directory. (default: home directory)
+
+#### Analyze
+
+Analyze the given directory structure to understand the project structure and dependencies:
+
+```bash
+SourceSailor analyse <path> [--verbose] [--openai] [--streaming]
+```
+
+Positional arguments:
+- `<path>`, `-p`: Path to the directory to analyze (required)
+
+Options:
+- `--verbose`, `-v`: Run with verbose logging (default: false)
+- `--openai`, `-o`: Use OpenAI to infer project structure (default: true)
+- `--streaming`, `-s`: Use OpenAI streaming to infer project structure (default: false)
+
+#### List Models
+
+List all available OpenAI models:
+
+```bash
+SourceSailor listModels [--verbose]
+```
+
+Options:
+- `--verbose`, `-v`: Enable verbose output
+
+#### List Config
+
+List all available configurations:
+
+```bash
+SourceSailor listConfig [--verbose]
+```
+
+Options:
+- `--verbose`, `-v`: Enable verbose output
+
+#### Update Config
+
+Update the OpenAI API key and default model:
+
+```bash
+SourceSailor updateConfig [--apiKey <api_key>] [--model <model_name>] [--analysisDir <directory>]
+```
+
+Options:
+- `--apiKey`, `-k`: OpenAI API Key
+- `--model`, `-m`: OpenAI Model
+- `--analysisDir`, `-a`: Root directory to write the analysis. Default is the home directory. Use 'p' to use the codebase directory.
+
+#### Prepare Report
+
+Prepare a report based on the analysis:
+
+```bash
+SourceSailor prepareReport <path> [--verbose] [--streaming]
+```
+
+Positional arguments:
+- `<path>`, `-p`: Path to the analysis (required)
+
+Options:
+- `--verbose`, `-v`: Enable verbose output
+- `--streaming`, `-s`: Stream the output to a file
+
+Use the `SourceSailor --help` command to see the full list of available commands and options.
 
 
 ## About the Code
