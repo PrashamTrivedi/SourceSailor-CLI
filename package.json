@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "",
   "type": "module",
+  
   "main": "index.mjs",
   "bin": {
     "SourceSailor": "./index.mjs"
@@ -12,7 +13,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "",
+  "author": "Prasham H Trivedi<contact@prashamhtrivedi.in>",
   "license": "ISC",
   "dependencies": {
     "ignore": "^5.3.1",
