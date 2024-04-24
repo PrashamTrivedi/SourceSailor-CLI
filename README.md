@@ -37,12 +37,29 @@ Options:
 - `--model`, `-m`: OpenAI Model (default: 'gpt-3.5-turbo')
 - `--analysisDir`, `-a`: Root directory to write the analysis. Default is the home directory. Use 'p' to use the codebase directory. (default: home directory)
 
+#### Get Directory Structure (Added in 1.3.0)
+
+Get the directory structure of the given path:
+
+```bash
+SourceSailor dirStructure <path|p> [--verbose] [--withContent] [--ignore]
+```
+
+Positional arguments:
+- `<path>`, `-p`: Path to the directory to analyze (required)
+
+Options:
+- `--verbose`, `-v`: Run with verbose logging (default: false)
+- `--withContent`, `-c`: Include file content in the output (default: true)
+- `--ignore`, `-i`: Additional files or patterns to ignore for analysis. You can pass multiple patterns separated by commas (default: none)
+
+
 #### Analyze
 
 Analyze the given directory structure to understand the project structure and dependencies:
 
 ```bash
-SourceSailor analyse <path> [--verbose] [--openai] [--streaming]
+SourceSailor analyse <path> [--verbose] [--openai] [--streaming] [--ignore]
 ```
 
 Positional arguments:
@@ -52,6 +69,7 @@ Options:
 - `--verbose`, `-v`: Run with verbose logging (default: false)
 - `--openai`, `-o`: Use OpenAI to infer project structure (default: true)
 - `--streaming`, `-s`: Use OpenAI streaming to infer project structure (default: false)
+- `--ignore`, `-i`: Additional files or patterns to ignore for analysis. You can pass multiple patterns separated by commas (default: none) (Added in 1.3.0)
 
 #### List Models
 
