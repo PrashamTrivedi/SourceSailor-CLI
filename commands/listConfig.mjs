@@ -13,3 +13,7 @@ export async function handler(argv) {
     const config = readConfig()
     console.log(config)
 }
+
+export const usage = '$0 <cmd> [args]'
+
+export const aliases = ['h', 'help']
