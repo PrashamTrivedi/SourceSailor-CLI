@@ -7,7 +7,7 @@ import ora from 'ora'
 
 import {UnknownLanguageError, getTreeSitterFromFileName} from "../treeSitterFromFieNames.mjs"
 import chalk from "chalk"
-export const command = 'analyse <path|p> [verbose|v] [openai|o] [streaming|s]'
+export const command = 'analyse <path|p> [verbose|v] [openai|o] [streaming|s] [ignore|i]'
 
 export const describe = 'Analyse the given directory structure to understand the project structure and dependencies'
 
@@ -38,6 +38,12 @@ export function builder(yargs) {
         type: 'boolean',
         default: false
     })
+    yargs.option('ignore', {
+        alias: 'i',
+        describe: 'Specify files or directories to ignore during analysis',
+        type: 'array',
+        default: []
+    })
 
     return yargs
 }
@@ -46,6 +52,7 @@ export async function handler(argv) {
     const isVerbose = argv.verbose || argv.v || false
     const useOpenAi = argv.openai || argv.o || true
     const allowStreaming = argv.streaming || argv.s || false
+    const ignore = argv.ignore || argv.i || []
     if (isVerbose) {
         console.log(`Analyse the given directory structure to understand the project structure and dependencies: ${argv.path}`)
     }
@@ -69,7 +76,7 @@ export async function handler(argv) {
     const sourceCodePath = argv.path
     const dirToWriteAnalysis = isProjectRoot ? `${sourceCodePath}/.SourceSailor` : `${rootDir}/.SourceSailor/${projectName}`
 
-    const {directoryInferrence, directoryStructureWithContent} = await analyseDirectoryStructure(path, isVerbose, isRoot, dirToWriteAnalysis, useOpenAi, isProjectRoot)
+    const {directoryInferrence, directoryStructureWithContent} = await analyseDirectoryStructure(path, isVerbose, isRoot, dirToWriteAnalysis, useOpenAi, isProjectRoot, ignore)
 
     if (isVerbose) {
         console.log({project: argv.path, directoryInferrence})
@@ -119,9 +126,9 @@ export async function handler(argv) {
 }
 
 
-async function analyseDirectoryStructure(path, isVerbose, isRoot, projectName, useOpenAi, isProjectRoot) {
+async function analyseDirectoryStructure(path, isVerbose, isRoot, projectName, useOpenAi, isProjectRoot, ignore) {
     const spinner = ora('Analyzing the directory structure...').start()
-    const directoryStructureWithContent = await getDirStructure(path, isVerbose)
+    const directoryStructureWithContent = await getDirStructure(path, ignore, isVerbose)
 
     const directoryStructure = JSON.parse(JSON.stringify(directoryStructureWithContent))
 
