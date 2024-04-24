@@ -2,6 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import {getAnalysis, readConfig} from '../utils.mjs'
 import {generateReadme} from '../openai.mjs'
+import ora from "ora"
 
 export const command = 'prepareReport <path|p> [verbose|v] [streaming|s]'
 
@@ -43,13 +44,14 @@ export async function handler(argv) {
         console.log({dirPath, isProjectRoot})
     }
 
+    const spinner = ora('Preparing report').start()
 
     const analysis = getAnalysis(dirPath, isProjectRoot)
     if (isVerbose) {
         console.log({analysis: Object.keys(analysis)})
     }
     if (!analysis) {
-        console.log('No analysis found, Please run analyse command first')
+        spinner.fail('No analysis found, Please run analyse command first')
         return
     }
     const directoryStructure = analysis.directoryStructure
@@ -63,7 +65,7 @@ export async function handler(argv) {
 
     let readmeResponse = ""
     if (allowStreaming) {
-
+        spinner.stop().clear()
         for await (const chunk of report) {
             const message = chunk.choices[0]?.delta.content || ""
             process.stdout.write(message)
@@ -72,7 +74,8 @@ export async function handler(argv) {
         process.stdout.write("\n")
 
     } else {
-        console.log(report)
+        spinner.stopAndPersist({symbol: '✔️', text: report})
+
         readmeResponse = report
     }
 }
