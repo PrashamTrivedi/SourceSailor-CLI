@@ -1,60 +1,28 @@
-name: Create Tag on Version Change
+name: Publish Package on Tag
 
 on:
   push:
-    branches:
-      - main
-    paths:
-      - 'package.json'
-      - '.github/workflows/publish.yaml'
+    tags:
+      - 'v*'  # This triggers the workflow on tags starting with 'v'
 
 jobs:
-  create-tag-and-release:
+  publish-package:
     runs-on: ubuntu-latest
 
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: Get new version
-      id: get-version
-      run: |
-        version=$(jq -r .version package.json)
-        echo "version=$version" >> $GITHUB_OUTPUT
-
-    - name: Check if tag exists
-      id: check-tag
-      run: |
-        git fetch --tags
-        if git rev-parse "refs/tags/v${{ steps.get-version.outputs.version }}" >/dev/null 2>&1; then
-          echo "exists=true" >> $GITHUB_OUTPUT
-        else
-          echo "exists=false" >> $GITHUB_OUTPUT
-        fi
-
-    - name: Create tag
-      if: steps.check-tag.outputs.exists == 'false'
-      run: |
-        git config user.name "github-actions[bot]"
-        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-        git tag -a "v${{ steps.get-version.outputs.version }}" -m "Release v${{ steps.get-version.outputs.version }}"
-        git push origin "v${{ steps.get-version.outputs.version }}"
-  
     - name: Setup NodeJS
-      if: steps.check-tag.outputs.exists == 'false'
       uses: actions/setup-node@v4
       with:
         node-version: '20.x'
         registry-url: 'https://registry.npmjs.org'
-      
+
     - name: Run NPM CI
-      if: steps.check-tag.outputs.exists == 'false'
       run: npm ci
 
     - name: Publish To NPM
-      if: steps.check-tag.outputs.exists == 'false' 
       run: npm publish
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_PUBLISH_TOKEN }}
-
-      
