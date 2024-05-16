@@ -1,0 +1,139 @@
+name: Manage project items
+
+on:
+  issues:
+    types: [opened, closed]
+  pull_request:
+    types: [opened, closed]
+
+jobs:
+  manage_project_items:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Add issue or pull request to project
+        if: github.event_name == 'issues' || github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.PROJECT_TOKEN }}
+          script: |
+            let nodeId;
+            let eventType;
+            if (context.payload.issue) {
+              nodeId = context.payload.issue.node_id;
+              eventType = 'Issue';
+            } else if (context.payload.pull_request) {
+              nodeId = context.payload.pull_request.node_id;
+              eventType = 'Pull Request';
+            } else {
+              console.log('Event is neither an issue nor a pull request.');
+              return;
+            }
+
+            const projectNumber = ${{ secrets.PROJECT_NUMBER }}; // Replace with your project number
+
+            // Fetch the project details using the GraphQL API
+            const { user } = await github.graphql(`
+              query($owner: String!, $number: Int!) {
+                user(login: $owner) {
+                  projectV2(number: $number) {
+                    id
+                    fields(first: 100) {
+                      nodes {
+                        ... on ProjectV2SingleSelectField {
+                          id
+                          name
+                          options {
+                            id
+                            name
+                          }
+                        }
+                        ... on ProjectV2Field {
+                          id
+                          name
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            `, {
+              owner: context.repo.owner,
+              number: projectNumber,
+            });
+
+            if (!user.projectV2) {
+              console.log(`Project with number "${projectNumber}" not found.`);
+              return;
+            }
+
+            const projectId = user.projectV2.id;
+
+            // Get the field ID and option ID for the status field
+            const statusField = user.projectV2.fields.nodes.find(field => field.name === 'Status');
+            const todoOptionId = statusField.options.find(option => option.name === 'Todo').id;
+            const closedOptionId = statusField.options.find(option => option.name === 'Done').id;
+
+            // Get the field ID for the project field
+            const projectField = user.projectV2.fields.nodes.find(field => field.name === 'Project');
+
+            if (context.payload.action === 'opened') {
+              // Add the issue or pull request to the project with TODO status
+              const addItemResponse = await github.graphql(`
+                mutation($projectId: ID!, $nodeId: ID!) {
+                  addProjectV2ItemById(input: {projectId: $projectId, contentId: $nodeId}) {
+                    item {
+                      id
+                    }
+                  }
+                }
+              `, {
+                projectId: projectId,
+                nodeId: nodeId,
+              });
+
+              const itemId = addItemResponse.addProjectV2ItemById.item.id;
+
+              // Update status field to TODO
+              await github.graphql(`
+                mutation($projectId: ID!, $itemId: ID!, $statusFieldId: ID!, $statusOptionId: String!) {
+                  updateProjectV2ItemFieldValue(input: {
+                    projectId: $projectId,
+                    itemId: $itemId,
+                    fieldId: $statusFieldId,
+                    value: { singleSelectOptionId: $statusOptionId }
+                  }) {
+                    projectV2Item {
+                      id
+                    }
+                  }
+                }
+              `, {
+                projectId: projectId,
+                itemId: itemId,
+                statusFieldId: statusField.id,
+                statusOptionId: todoOptionId,
+              });
+
+              // Update project field
+              await github.graphql(`
+                mutation($projectId: ID!, $itemId: ID!, $projectFieldId: ID!, $repositoryName: String!) {
+                  updateProjectV2ItemFieldValue(input: {
+                    projectId: $projectId,
+                    itemId: $itemId,
+                    fieldId: $projectFieldId,
+                    value: { text: $repositoryName }
+                  }) {
+                    projectV2Item {
+                      id
+                    }
+                  }
+                }
+              `, {
+                projectId: projectId,
+                itemId: itemId,
+                projectFieldId: projectField.id,
+                repositoryName: context.repo.repo,
+              });
+
+              console.log(`${eventType} added to the project with TODO status.`);
+            }
