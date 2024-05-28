@@ -9,7 +9,11 @@
   },
   "scripts": {
     "dev": "npm link && SourceSailor",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "test:unit:ci": "nyc --reporter=json --reporter=lcov mocha 'tests/unit/**/*.js'",
+    "test:unit:local": "nyc --reporter=html mocha 'tests/unit/**/*.js'",
+    "test:integration:ci": "nyc --reporter=json --reporter=lcov mocha 'tests/integration/**/*.js'",
+    "test:integration:local": "nyc --reporter=html mocha 'tests/integration/**/*.js'"
   },
   "keywords": [
     "OpenAI",
@@ -49,5 +53,13 @@
     "tree-sitter-typescript": "^0.20.5",
     "tree-sitter-vue": "^0.2.1",
     "yargs": "^17.7.2"
+  },
+  "devDependencies": {
+    "chai": "^5.1.1",
+    "chai-as-promised": "^7.1.2",
+    "mocha": "^10.4.0",
+    "nock": "^13.5.4",
+    "nyc": "^15.1.0",
+    "sinon": "^18.0.0"
   }
 }

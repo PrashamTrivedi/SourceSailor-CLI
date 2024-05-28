@@ -1,6 +1,6 @@
 import {getDirStructure} from "../directoryProcessor.mjs"
 import {calculateTokens, inferCode, inferCodeAST, inferDependency, inferFileImports, inferInterestingCode, inferInterestingCodeAST, inferProjectDirectory} from "../openai.mjs"
-import {analyseFileContents, parseTree} from "../treeParser.mjs"
+import {analyseFileContents} from "../treeParser.mjs"
 import fs from 'fs'
 import {addAnalysisInGitIgnore, readConfig, writeAnalysis, writeError} from "../utils.mjs"
 import ora from 'ora'

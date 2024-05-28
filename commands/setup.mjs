@@ -37,6 +37,10 @@ export function handler(argv) {
         fs.mkdirSync(path.join(homeDir, '.SourceSailor'))
     }
     const configFile = path.join(homeDir, '.SourceSailor', 'config.json')
+    // If file is not created, create it
+    if (!fs.existsSync(configFile)) {
+        fs.writeFileSync(configFile, JSON.stringify({}))
+    }
     const configData = fs.readFileSync(configFile, 'utf8')
 
     const config = {

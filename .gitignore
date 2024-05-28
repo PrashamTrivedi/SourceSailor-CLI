@@ -8,3 +8,6 @@ yarn-debug.log*
 steps*.md
 .SourceSailor/analysis
 .aider*
+coverage/
+testDirectory/
+.nyc_output/
