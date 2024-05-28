@@ -11,9 +11,9 @@
     "dev": "npm link && SourceSailor",
     "test": "echo \"Error: no test specified\" && exit 1",
     "test:unit:ci": "nyc --reporter=json --reporter=lcov mocha 'tests/unit/**/*.js'",
-    "test:unit:local": "nyc --reporter=html mocha 'tests/unit/**/*.js'",
+    "test:unit:local": "nyc --reporter=html mocha 'tests/unit/**/*.js' --reporter mochawesome --reporter-options reportDir=coverage,reportFilename=integrationTests.html",
     "test:integration:ci": "nyc --reporter=json --reporter=lcov mocha 'tests/integration/**/*.js'",
-    "test:integration:local": "nyc --reporter=html mocha 'tests/integration/**/*.js'"
+    "test:integration:local": "nyc --reporter=html --report-dir=coverage mocha 'tests/integration/**/*.js' --reporter mochawesome --reporter-options reportDir=coverage,reportFilename=integrationTests.html"
   },
   "keywords": [
     "OpenAI",
@@ -58,6 +58,7 @@
     "chai": "^5.1.1",
     "chai-as-promised": "^7.1.2",
     "mocha": "^10.4.0",
+    "mochawesome": "^7.1.3",
     "nock": "^13.5.4",
     "nyc": "^15.1.0",
     "sinon": "^18.0.0"
