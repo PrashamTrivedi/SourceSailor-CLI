@@ -8,3 +8,4 @@ yarn-debug.log*
 steps*.md
 .SourceSailor/analysis
 .aider*
+dist/

@@ -1,11 +1,11 @@
-import {getDirStructure} from "../directoryProcessor"
+import {getDirStructure} from "../directoryProcessor.mjs"
 import {calculateTokens, inferCode, inferCodeAST, inferDependency, inferFileImports, inferInterestingCode, inferInterestingCodeAST, inferProjectDirectory} from "../openai"
-import {analyseFileContents, parseTree} from "../treeParser"
+import {analyseFileContents, parseTree} from "../treeParser.mjs"
 import fs from 'fs'
-import {addAnalysisInGitIgnore, readConfig, writeAnalysis, writeError} from "../utils"
+import {addAnalysisInGitIgnore, readConfig, writeAnalysis, writeError} from "../utils.mjs"
 import ora from 'ora'
 
-import {UnknownLanguageError, getTreeSitterFromFileName} from "../treeSitterFromFieNames"
+import {UnknownLanguageError, getTreeSitterFromFileName} from "../treeSitterFromFieNames.mjs"
 import chalk from "chalk"
 export const command = 'analyse <path|p> [verbose|v] [openai|o] [streaming|s] [ignore|i]'
 
@@ -126,13 +126,13 @@ export async function handler(argv) {
 }
 
 
-async function analyseDirectoryStructure(path, isVerbose, isRoot, projectName, useOpenAi, isProjectRoot, ignore) {
+async function analyseDirectoryStructure(path: string, isVerbose: boolean | undefined, isRoot: boolean, projectName: string, useOpenAi: any, isProjectRoot: boolean | undefined, ignore: undefined) {
     const spinner = ora('Analyzing the directory structure...').start()
     const directoryStructureWithContent = await getDirStructure(path, ignore, isVerbose)
 
     const directoryStructure = JSON.parse(JSON.stringify(directoryStructureWithContent))
 
-    function deleteContent(file) {
+    function deleteContent(file: {content: any; children: any}) {
         delete file.content
         if (file.children) {
             for (const child of file.children) {
@@ -165,7 +165,7 @@ async function analyseDirectoryStructure(path, isVerbose, isRoot, projectName, u
 
     return {directoryInferrence, directoryStructureWithContent}
 }
-async function traverseAndAnalyze(isVerbose, node) {
+async function traverseAndAnalyze(isVerbose: any, node: {content: string | null; name: any; children: any}) {
     if (node.content !== null) {
         try {
             const language = getTreeSitterFromFileName(node.name)

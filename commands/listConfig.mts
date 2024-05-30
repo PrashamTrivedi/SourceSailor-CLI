@@ -1,4 +1,4 @@
-import {readConfig} from "../utils"
+import {readConfig} from "../utils.mjs"
 
 export const command = 'listConfig [verbose]'
 

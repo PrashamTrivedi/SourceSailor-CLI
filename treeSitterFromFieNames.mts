@@ -31,7 +31,7 @@ const extensionToTreeSitter = {
 }
 
 class UnknownLanguageError extends Error {
-    constructor (message) {
+    constructor(message) {
         super(message)
         this.name = "UnknownLanguageError"
     }
