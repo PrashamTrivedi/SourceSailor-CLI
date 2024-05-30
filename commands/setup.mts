@@ -37,13 +37,20 @@ export function handler(argv) {
         fs.mkdirSync(path.join(homeDir, '.SourceSailor'))
     }
     const configFile = path.join(homeDir, '.SourceSailor', 'config.json')
-    const configData = fs.readFileSync(configFile, 'utf8')
-
-    const config = {
+    const configFileData = fs.readFileSync(configFile, 'utf8')
+    let configData: Record<string, string> = {}
+    try {
+        configData = JSON.parse(configFileData)
+    } catch (error) {
+        console.error('Error parsing config file:', error)
+    }
+    let config = {
         OPENAI_API_KEY: argv.apiKey || configData.OPENAI_API_KEY,
         DEFAULT_OPENAI_MODEL: argv.model || configData.DEFAULT_OPENAI_MODEL,
         ANALYSIS_DIR: argv.analysisDir || configData.ANALYSIS_DIR
     }
+
+
     fs.writeFileSync(configFile, JSON.stringify(config))
 }
 
