@@ -1,11 +1,9 @@
-import {getDirStructure} from "../directoryProcessor.mjs"
+import {FileNode, getDirStructure} from "../directoryProcessor.mjs"
 import {calculateTokens, inferCode, inferCodeAST, inferDependency, inferFileImports, inferInterestingCode, inferInterestingCodeAST, inferProjectDirectory} from "../openai"
-import {analyseFileContents, parseTree} from "../treeParser.mjs"
 import fs from 'fs'
 import {addAnalysisInGitIgnore, readConfig, writeAnalysis, writeError} from "../utils.mjs"
 import ora from 'ora'
 
-import {UnknownLanguageError, getTreeSitterFromFileName} from "../treeSitterFromFieNames.mjs"
 import chalk from "chalk"
 export const command = 'analyse <path|p> [verbose|v] [openai|o] [streaming|s] [ignore|i]'
 
@@ -105,7 +103,7 @@ export async function handler(argv) {
             const analysisRootDir = isProjectRoot ? `${sourceCodePath}/.SourceSailor` : `${rootDir}/.SourceSailor/${projectName}/${directory}`
             try {
 
-                const {directoryInferrence, directoryStructureWithContent} = await analyseDirectoryStructure(sourceCodePath, isVerbose, false, analysisRootDir, useOpenAi, isProjectRoot)
+                const {directoryInferrence, directoryStructureWithContent} = await analyseDirectoryStructure(sourceCodePath, isVerbose, false, analysisRootDir, useOpenAi, isProjectRoot, ignore)
 
                 await inferDependenciesAndWriteAnalysis(sourceCodePath, directoryInferrence, useOpenAi, allowStreaming, isVerbose, analysisRootDir, isProjectRoot)
 
@@ -114,7 +112,7 @@ export async function handler(argv) {
             } catch (error) {
                 const errorAnalysisSkipped = `Error analysing ${directory}: Moving on to next directory...`
                 console.error(errorAnalysisSkipped)
-                writeError(analysisRootDir, 'ReadingDir', error.stack, errorAnalysisSkipped)
+                writeError(analysisRootDir, 'ReadingDir', (error as Error).stack, errorAnalysisSkipped)
                 if (isVerbose) {
                     console.error(error)
                 }
@@ -126,13 +124,13 @@ export async function handler(argv) {
 }
 
 
-async function analyseDirectoryStructure(path: string, isVerbose: boolean | undefined, isRoot: boolean, projectName: string, useOpenAi: any, isProjectRoot: boolean | undefined, ignore: undefined) {
+async function analyseDirectoryStructure(path: string, isVerbose: boolean | undefined, isRoot: boolean, projectName: string, useOpenAi: any, isProjectRoot: boolean | undefined, ignore: string[]) {
     const spinner = ora('Analyzing the directory structure...').start()
     const directoryStructureWithContent = await getDirStructure(path, ignore, isVerbose)
 
-    const directoryStructure = JSON.parse(JSON.stringify(directoryStructureWithContent))
+    const directoryStructure: FileNode = JSON.parse(JSON.stringify(directoryStructureWithContent))
 
-    function deleteContent(file: {content: any; children: any}) {
+    function deleteContent(file: FileNode) {
         delete file.content
         if (file.children) {
             for (const child of file.children) {
@@ -141,7 +139,7 @@ async function analyseDirectoryStructure(path: string, isVerbose: boolean | unde
         }
     }
 
-    for (const file of directoryStructure.children) {
+    for (const file of directoryStructure.children ?? []) {
         deleteContent(file)
     }
 
@@ -165,45 +163,19 @@ async function analyseDirectoryStructure(path: string, isVerbose: boolean | unde
 
     return {directoryInferrence, directoryStructureWithContent}
 }
-async function traverseAndAnalyze(isVerbose: any, node: {content: string | null; name: any; children: any}) {
-    if (node.content !== null) {
-        try {
-            const language = getTreeSitterFromFileName(node.name)
-            if (isVerbose) {
-                console.log(`Language for ${node.name}: ${language}`)
-            }
-            node.content = await analyseFileContents(language, isVerbose, node.content)
-        } catch (error) {
-            if (error instanceof UnknownLanguageError) {
-                console.warn(`Skipping analysis for ${node.name}: ${error.message}`)
-            } else {
-                console.error(`Error analysing ${node.name}`, error)
-            }
-        }
-    }
 
-    if (Array.isArray(node.children)) {
-        for (const child of node.children) {
-            await traverseAndAnalyze(isVerbose, child)
-        }
-    }
-}
-async function analyzeCode(tokenLength, directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose, projectName, isProjectRoot) {
+async function analyzeCode(tokenLength: number, directoryStructureWithoutLockFile: FileNode, useOpenAi: boolean, allowStreaming: boolean, isVerbose: boolean, projectName: string, isProjectRoot: boolean) {
     if (tokenLength <= 128000) {
         await analyzeAndWriteCodeInference(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose, projectName, isProjectRoot)
     } else {
 
-        await traverseAndAnalyze(isVerbose, directoryStructureWithoutLockFile)
-
-
-        await analyzeAndWriteCodeInferenceAST(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose, projectName, isProjectRoot)
 
         console.log("This codebase is too big for full code analysis, but we've performed an AST analysis.")
         writeAnalysis(projectName, "codeTokens", `Token length of entire codebase: ${tokenLength}, path: ${projectName}. AST analysis performed.`, isProjectRoot)
     }
 }
 
-async function analyzeAndWriteCodeInference(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose, projectName, isProjectRoot) {
+async function analyzeAndWriteCodeInference(directoryStructureWithoutLockFile: FileNode, useOpenAi: boolean, allowStreaming: boolean, isVerbose: boolean, projectName: string, isProjectRoot: boolean) {
     let codeInferrenceResponse = await analyzeCodebase(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose)
     let interestingCodeResponse = await analyseInterestingCode(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose)
     // Concatenate the code inferrence and interesting code
@@ -211,7 +183,7 @@ async function analyzeAndWriteCodeInference(directoryStructureWithoutLockFile, u
     writeAnalysis(projectName, "codeInferrence", codeInferrenceResponse, false, isProjectRoot)
 }
 
-async function analyseInterestingCode(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose) {
+async function analyseInterestingCode(directoryStructureWithoutLockFile: FileNode, useOpenAi: boolean, allowStreaming: boolean, isVerbose: boolean) {
     const spinner = ora('Analysing interesting code').start()
     const interestingCode = await inferInterestingCode(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose)
     let interestingCodeResponse = ""
@@ -231,7 +203,7 @@ async function analyseInterestingCode(directoryStructureWithoutLockFile, useOpen
     return interestingCodeResponse
 }
 
-async function analyzeCodebase(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose) {
+async function analyzeCodebase(directoryStructureWithoutLockFile: FileNode, useOpenAi: boolean, allowStreaming: boolean, isVerbose: boolean) {
     const spinner = ora('Reading Codebase and inferring code...').start()
     const codeInferrence = await inferCode(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose)
     let codeInferrenceResponse = ""
@@ -251,58 +223,9 @@ async function analyzeCodebase(directoryStructureWithoutLockFile, useOpenAi, all
 }
 
 
-async function analyzeAndWriteCodeInferenceAST(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose, projectName, isProjectRoot) {
 
-    let codeInferrenceResponse = await analyzeCodebaseAST(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose)
-    const interestingCodeResponse = await analyseInterestingCodeAST(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose)
-    // Concatenate the code inferrence and interesting code
-    codeInferrenceResponse += interestingCodeResponse
-    writeAnalysis(projectName, "codeInferrenceAST", codeInferrenceResponse, false, isProjectRoot)
-}
+async function calculateCodebaseTokens(directoryInferrence: any, directoryStructureWithContent: FileNode | undefined, isVerbose: boolean) {
 
-async function analyseInterestingCodeAST(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose) {
-    const spinner = ora('Analysing interesting code').start()
-
-    const interestingCode = await inferInterestingCodeAST(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose)
-    let interestingCodeResponse = ""
-    if (allowStreaming) {
-        spinner.stop().clear()
-        for await (const chunk of interestingCode) {
-            const message = chunk.choices[0]?.delta.content || ""
-            process.stdout.write(message)
-            interestingCodeResponse += message
-        }
-        process.stdout.write("\n")
-    } else {
-        spinner.stopAndPersist({symbol: '✔️', text: interestingCode})
-
-        interestingCodeResponse = interestingCode
-    }
-    return interestingCodeResponse
-}
-
-async function analyzeCodebaseAST(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose) {
-    const spinner = ora('Reading codebase and inferring code...').start()
-    const codeInferrence = await inferCodeAST(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose)
-    let codeInferrenceResponse = ""
-    if (allowStreaming) {
-        spinner.stop().clear()
-
-        for await (const chunk of codeInferrence) {
-            const message = chunk.choices[0]?.delta.content || ""
-            process.stdout.write(message)
-            codeInferrenceResponse += message
-        }
-        process.stdout.write("\n")
-    } else {
-        spinner.stopAndPersist({symbol: '✔️', text: codeInferrence})
-
-        codeInferrenceResponse = codeInferrence
-    }
-    return codeInferrenceResponse
-}
-
-async function calculateCodebaseTokens(directoryInferrence, directoryStructureWithContent, isVerbose) {
     const lockfile = directoryInferrence.lockFile
     const directoryStructureWithoutLockFile = JSON.parse(JSON.stringify(directoryStructureWithContent))
     removeLockFile(directoryStructureWithoutLockFile, lockfile)
@@ -315,7 +238,7 @@ async function calculateCodebaseTokens(directoryInferrence, directoryStructureWi
     return {tokenLength, directoryStructureWithoutLockFile}
 }
 
-async function inferDependenciesAndWriteAnalysis(sourceCodePath, directoryInferrence, useOpenAi, allowStreaming, isVerbose, projectName, isProjectRoot) {
+async function inferDependenciesAndWriteAnalysis(sourceCodePath: string, directoryInferrence: any, useOpenAi: boolean, allowStreaming: boolean, isVerbose: boolean, projectName: string, isProjectRoot: boolean) {
     const spinner = ora('Inferring dependencies...').start()
     if (isVerbose) {
         console.log({sourceCodePath, projectName, directoryInferrence})
@@ -347,51 +270,17 @@ async function inferDependenciesAndWriteAnalysis(sourceCodePath, directoryInferr
 }
 
 // Find the lockfile recursively and remove it from entry
-function removeLockFile(file, lockfile) {
-    if (file.children) {
+function removeLockFile(file: FileNode | undefined, lockfile: string) {
+    if (file?.children) {
         for (const child of file.children) {
             if (child.name === lockfile) {
                 file.children = file.children.filter(child => child.name !== lockfile)
             } else {
-                removeLockFile(child)
+                removeLockFile(child, lockfile)
             }
         }
     }
 }
-
-async function writeToSpinner(text, action, isInitializing = false) {
-    const spinner = ora(text)
-    if (isInitializing) {
-        spinner.start()
-    }
-
-    if (!action) {
-        action = 'info'
-    }
-    switch (action.toLowerCase()) {
-        case 'success':
-            spinner.succeed(text)
-            spinner.stop().clear()
-            break
-        case 'fail':
-            spinner.fail(text)
-            spinner.stop().clear()
-            break
-        case 'warn':
-            spinner.warn(text)
-            spinner.stop().clear()
-            break
-        case 'error':
-            spinner.fail(text)
-            spinner.stop().clear()
-        default:
-            spinner.text = text
-            break
-    }
-
-
-}
-
 
 export const usage = '$0 <cmd> [args]'
 

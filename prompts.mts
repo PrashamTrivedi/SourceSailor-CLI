@@ -1,4 +1,29 @@
-export const prompts = {
+interface Property {
+    type: string
+    description: string
+}
+
+interface Item {
+    type: string
+    properties?: Record<string, Property>
+    required?: string[]
+}
+
+interface MainProperty extends Property {
+    items?: Item
+}
+
+type Properties = Record<string, MainProperty>
+interface Prompt {
+    prompt: string
+    params?: {
+        description: string
+        name: string
+        parameters: Record<string, any>
+    }
+}
+
+export const prompts: Record<string, Prompt> = {
     commonSystemPrompt: {
         prompt: `You are a senior software developer who has an experience working with almost all the mainstream programming languages. You can browse through directory structure and read the files containing a codebase. Your job is to create a report that will help a developer who is getting started with this codebase. To help the developer, you will create a report which must include: Programming language used, framework(s) used and the functionality provided by the codebase. If you can figure out the workflows of the app you have to list them out along with relevant code lines.`
     },

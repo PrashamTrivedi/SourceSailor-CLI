@@ -3,6 +3,8 @@ import path from 'path'
 import {getAnalysis, readConfig} from '../utils.mjs'
 import {generateReadme} from '../openai.mjs'
 import ora from "ora"
+import {ChatCompletionChunk} from "openai/resources/index.mjs"
+import {Stream} from "openai/streaming.mjs"
 
 export const command = 'prepareReport <path|p> [verbose|v] [streaming|s]'
 
@@ -63,20 +65,23 @@ export async function handler(argv) {
     }
     const report = await generateReadme(directoryStructure, dependencyInference, codeInference, true, allowStreaming, isVerbose)
 
-    let readmeResponse = ""
-    if (allowStreaming) {
-        spinner.stop().clear()
-        for await (const chunk of report) {
-            const message = chunk.choices[0]?.delta.content || ""
-            process.stdout.write(message)
-            readmeResponse += message
+    if (report) {
+
+        let readmeResponse = ""
+        if (allowStreaming) {
+            spinner.stop().clear()
+            for await (const chunk of (report as Stream<ChatCompletionChunk>)) {
+                const message = chunk.choices[0]?.delta.content || ""
+                process.stdout.write(message)
+                readmeResponse += message
+            }
+            process.stdout.write("\n")
+
+        } else {
+            spinner.stopAndPersist({symbol: '✔️', text: report})
+
+            readmeResponse = report as string
         }
-        process.stdout.write("\n")
-
-    } else {
-        spinner.stopAndPersist({symbol: '✔️', text: report})
-
-        readmeResponse = report
     }
 }
 export const usage = '$0 <cmd> [args]'
