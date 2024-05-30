@@ -1,6 +1,7 @@
 import chalk from "chalk"
-import {readConfig} from "../utils.mjs"
-import {getDirStructure} from "../directoryProcessor.mjs"
+import {readConfig} from "../utils"
+import {getDirStructure} from "../directoryProcessor"
+
 
 export const command = 'dirStructure <path|p> [verbose|v] [withContent|c] [ignore|i]'
 

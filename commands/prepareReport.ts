@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path from 'path'
-import {getAnalysis, readConfig} from '../utils.mjs'
-import {generateReadme} from '../openai.mjs'
+import {getAnalysis, readConfig} from '../utils'
+import {generateReadme} from '../openai'
 import ora from "ora"
 
 export const command = 'prepareReport <path|p> [verbose|v] [streaming|s]'

@@ -4,8 +4,8 @@ import OpenAI from 'openai'
 import {get_encoding} from "tiktoken"
 
 import {Stream} from "openai/streaming"
-import {prompts} from "./prompts.mjs"
-import {readConfig} from "./utils.mjs"
+import {prompts} from "./prompts"
+import {readConfig} from "./utils"
 
 
 export const calculateTokens = async (messages) => {

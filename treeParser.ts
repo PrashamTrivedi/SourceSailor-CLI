@@ -1,6 +1,6 @@
 import fs from 'fs'
 import parser from 'tree-sitter'
-import {calculateTokens} from "./openai.mjs"
+import {calculateTokens} from "./openai"
 const availableTypes = ['import_statement', 'require_call', 'exports', 'dynamicLinks', "lexical_declaration", "expression_statement", 'function_definition', 'method_definition', 'class_definition']
 export const parseTree = async (file, language, isVerbose = false) => {
     try {

@@ -2,15 +2,15 @@
 
 import yargs from "yargs"
 import {hideBin} from "yargs/helpers"
-import {getDirStructure} from "./directoryProcessor.mjs"
-import {inferProjectDirectory} from "./openai.mjs"
-import * as SetupCommand from './commands/setup.mjs'
-import * as DirectoryProcessor from "./commands/analyse.mjs"
-import * as ListModelsProcessor from "./commands/listModels.mjs"
-import * as ListConfigProcessor from "./commands/listConfig.mjs"
-import * as UpdateConfigProcessor from "./commands/updateConfig.mjs"
-import * as PrepareReportProcessor from "./commands/prepareReport.mjs"
-import * as GetDirStructure from "./commands/getDirStructure.mjs"
+import {getDirStructure} from "./directoryProcessor"
+import {inferProjectDirectory} from "./openai"
+import * as SetupCommand from './commands/setup'
+import * as DirectoryProcessor from "./commands/analyse"
+import * as ListModelsProcessor from "./commands/listModels"
+import * as ListConfigProcessor from "./commands/listConfig"
+import * as UpdateConfigProcessor from "./commands/updateConfig"
+import * as PrepareReportProcessor from "./commands/prepareReport"
+import * as GetDirStructure from "./commands/getDirStructure"
 
 const yargsSetup = yargs(hideBin(process.argv))
 // console.log("Hello there")

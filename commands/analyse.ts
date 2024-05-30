@@ -1,11 +1,11 @@
-import {getDirStructure} from "../directoryProcessor.mjs"
-import {calculateTokens, inferCode, inferCodeAST, inferDependency, inferFileImports, inferInterestingCode, inferInterestingCodeAST, inferProjectDirectory} from "../openai.mjs"
-import {analyseFileContents, parseTree} from "../treeParser.mjs"
+import {getDirStructure} from "../directoryProcessor"
+import {calculateTokens, inferCode, inferCodeAST, inferDependency, inferFileImports, inferInterestingCode, inferInterestingCodeAST, inferProjectDirectory} from "../openai"
+import {analyseFileContents, parseTree} from "../treeParser"
 import fs from 'fs'
-import {addAnalysisInGitIgnore, readConfig, writeAnalysis, writeError} from "../utils.mjs"
+import {addAnalysisInGitIgnore, readConfig, writeAnalysis, writeError} from "../utils"
 import ora from 'ora'
 
-import {UnknownLanguageError, getTreeSitterFromFileName} from "../treeSitterFromFieNames.mjs"
+import {UnknownLanguageError, getTreeSitterFromFileName} from "../treeSitterFromFieNames"
 import chalk from "chalk"
 export const command = 'analyse <path|p> [verbose|v] [openai|o] [streaming|s] [ignore|i]'
 

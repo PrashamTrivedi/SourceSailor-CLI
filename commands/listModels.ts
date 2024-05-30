@@ -1,4 +1,4 @@
-import {listModels} from "../openai.mjs"
+import {listModels} from "../openai"
 
 export const command = 'listModels [verbose]'
 
