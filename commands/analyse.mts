@@ -3,6 +3,9 @@ import {calculateTokens, inferCode, inferDependency, inferInterestingCode, infer
 import fs from 'fs'
 import {addAnalysisInGitIgnore, readConfig, writeAnalysis, writeError} from "../utils.mjs"
 import ora from 'ora'
+import {Arguments} from 'yargs'
+import {ChatCompletionChunk} from "openai/resources/index.mjs"
+import {Stream} from "openai/streaming.mjs"
 
 import chalk from "chalk"
 export const command = 'analyse <path|p> [verbose|v] [openai|o] [streaming|s] [ignore|i]'
@@ -48,14 +51,12 @@ export function builder(yargs: Argv) {
     return yargs
 }
 
-import {Arguments} from 'yargs'
-import {ChatCompletionChunk} from "openai/resources/index.mjs"
-import {Stream} from "openai/streaming.mjs"
+
 
 export async function handler(argv: Arguments) {
-    const isVerbose = argv.verbose as boolean || argv.v as boolean || false
-    const useOpenAi = argv.openai as boolean || argv.o as boolean || true
-    const allowStreaming = argv.streaming as boolean || argv.s as boolean || false
+    const isVerbose = argv.verbose as boolean || argv.v as boolean || false as boolean
+    const useOpenAi = argv.openai as boolean || argv.o as boolean || true as boolean
+    const allowStreaming = argv.streaming as boolean || argv.s as boolean || false as boolean
     const ignore = argv.ignore as string[] || argv.i as string[] || []
     if (isVerbose) {
         console.log(`Analyse the given directory structure to understand the project structure and dependencies: ${argv.path}`)
