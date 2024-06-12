@@ -154,7 +154,7 @@ export const inferProjectDirectory = async (
     useOpenAi: boolean = true,
     isStreaming: boolean = false,
     isVerbose: boolean = false
-): Promise<string | undefined | Stream<ChatCompletionChunk>> => {
+): Promise<string | undefined> => {
     const openai = getOpenAiClient(useOpenAi, isVerbose)
     const model = await getModel(useOpenAi)
 
@@ -179,7 +179,7 @@ export const inferProjectDirectory = async (
             }
         )
     }
-    return callApiAndReturnResult(openai, model, compatibilityMessage, isStreaming, isVerbose, tools)
+    return callApiAndReturnResult(openai, model, compatibilityMessage, isStreaming, isVerbose, tools) as Promise<string | undefined>
 
 
 }

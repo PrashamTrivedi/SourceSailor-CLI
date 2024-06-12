@@ -6,7 +6,9 @@ export const command = 'setup [apiKey|k] [model|m]'
 
 export const describe = 'Setup OpenAI API Key and default model'
 
-export function builder(yargs) {
+import { Argv } from 'yargs';
+
+export function builder(yargs: Argv) {
 
     yargs.option('apiKey', {
         describe: 'OpenAI API Key',
@@ -30,7 +32,9 @@ export function builder(yargs) {
     return yargs
 }
 
-export function handler(argv) {
+import { Arguments } from 'yargs';
+
+export function handler(argv: Arguments) {
     console.log(`Setting up OpenAI API Key: ${argv.apiKey} and default model: ${argv.model}`)
     const homeDir = os.homedir()
     if (!fs.existsSync(path.join(homeDir, '.SourceSailor'))) {

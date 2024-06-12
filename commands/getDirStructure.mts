@@ -1,13 +1,15 @@
 import chalk from "chalk"
 import {readConfig} from "../utils.mjs"
-import {getDirStructure} from "../directoryProcessor.mjs"
+import {getDirStructure, FileNode} from "../directoryProcessor.mjs"
 
 
 export const command = 'dirStructure <path|p> [verbose|v] [withContent|c] [ignore|i]'
 
 export const describe = 'Get Directory Structure'
 
-export function builder(yargs) {
+import {Argv} from 'yargs'
+
+export function builder(yargs: Argv) {
     yargs.positional('path', {
         alias: 'p',
 
@@ -38,26 +40,28 @@ export function builder(yargs) {
     return yargs
 }
 
-export async function handler(argv) {
-    const isVerbose = argv.verbose || argv.v || false
-    const ignore = argv.ignore || argv.i || []
-    const withContent = argv.withContent || argv.c || false
+import {Arguments} from 'yargs'
+
+export async function handler(argv: Arguments) {
+    const isVerbose = argv.verbose as boolean || argv.v as boolean || false
+    const ignore = argv.ignore as string[] || argv.i as string[] || []
+    const withContent = argv.withContent as boolean || argv.c as boolean || false
     if (isVerbose) {
         console.log({argv})
     }
-    const projectName = argv.path
+    const projectName = argv.path as string
 
 
     console.log(`Analysing ${chalk.redBright(projectName)}'s file structure to getting started.`)
     // const defaultSpinner = ora().start()
-    const path = argv.path
+    const path = argv.path as string
     const directoryStructureWithContent = await getDirStructure(path, ignore, isVerbose)
 
     if (!withContent) {
 
         const directoryStructure = JSON.parse(JSON.stringify(directoryStructureWithContent))
 
-        function deleteContent(file) {
+        function deleteContent(file: FileNode) {
             delete file.content
             if (file.children) {
                 for (const child of file.children) {

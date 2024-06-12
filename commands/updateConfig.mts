@@ -8,7 +8,9 @@ export const command = 'updateConfig [apiKey|k] [model|m]'
 
 export const describe = 'Update OpenAI API Key and default model'
 
-export function builder(yargs) {
+import { Argv } from 'yargs';
+
+export function builder(yargs: Argv) {
     yargs.option('apiKey', {
         describe: 'OpenAI API Key',
         type: 'string',
@@ -27,7 +29,9 @@ export function builder(yargs) {
     return yargs
 }
 
-export function handler(argv) {
+import { Arguments } from 'yargs';
+
+export function handler(argv: Arguments) {
     const homeDir = os.homedir()
     const configFile = path.join(homeDir, '.SourceSailor', 'config.json')
     const configData = JSON.parse(fs.readFileSync(configFile, 'utf8'))

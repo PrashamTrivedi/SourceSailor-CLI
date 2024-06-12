@@ -1,5 +1,5 @@
 import {FileNode, getDirStructure} from "../directoryProcessor.mjs"
-import {calculateTokens, inferCode, inferCodeAST, inferDependency, inferFileImports, inferInterestingCode, inferInterestingCodeAST, inferProjectDirectory} from "../openai"
+import {calculateTokens, inferCode, inferDependency, inferInterestingCode, inferProjectDirectory} from "../openai.mjs"
 import fs from 'fs'
 import {addAnalysisInGitIgnore, readConfig, writeAnalysis, writeError} from "../utils.mjs"
 import ora from 'ora'
@@ -9,7 +9,9 @@ export const command = 'analyse <path|p> [verbose|v] [openai|o] [streaming|s] [i
 
 export const describe = 'Analyse the given directory structure to understand the project structure and dependencies'
 
-export function builder(yargs) {
+import {Argv} from 'yargs'
+
+export function builder(yargs: Argv) {
 
     yargs.positional('path', {
         alias: 'p',
@@ -46,11 +48,15 @@ export function builder(yargs) {
     return yargs
 }
 
-export async function handler(argv) {
-    const isVerbose = argv.verbose || argv.v || false
-    const useOpenAi = argv.openai || argv.o || true
-    const allowStreaming = argv.streaming || argv.s || false
-    const ignore = argv.ignore || argv.i || []
+import {Arguments} from 'yargs'
+import {ChatCompletionChunk} from "openai/resources/index.mjs"
+import {Stream} from "openai/streaming.mjs"
+
+export async function handler(argv: Arguments) {
+    const isVerbose = argv.verbose as boolean || argv.v as boolean || false
+    const useOpenAi = argv.openai as boolean || argv.o as boolean || true
+    const allowStreaming = argv.streaming as boolean || argv.s as boolean || false
+    const ignore = argv.ignore as string[] || argv.i as string[] || []
     if (isVerbose) {
         console.log(`Analyse the given directory structure to understand the project structure and dependencies: ${argv.path}`)
     }
@@ -58,7 +64,7 @@ export async function handler(argv) {
 
     const rootDir = config.ANALYSIS_DIR
 
-    const projectName = argv.path
+    const projectName = argv.path as string
 
     const isProjectRoot = rootDir === 'p'
 
@@ -69,9 +75,9 @@ export async function handler(argv) {
     }
     console.log(`Analysing ${chalk.redBright(projectName)}'s file structure to getting started.`)
     // const defaultSpinner = ora().start()
-    const path = argv.path
+    const path = argv.path as string
     const isRoot = true
-    const sourceCodePath = argv.path
+    const sourceCodePath = argv.path as string
     const dirToWriteAnalysis = isProjectRoot ? `${sourceCodePath}/.SourceSailor` : `${rootDir}/.SourceSailor/${projectName}`
 
     const {directoryInferrence, directoryStructureWithContent} = await analyseDirectoryStructure(path, isVerbose, isRoot, dirToWriteAnalysis, useOpenAi, isProjectRoot, ignore)
@@ -150,7 +156,7 @@ async function analyseDirectoryStructure(path: string, isVerbose: boolean | unde
         writeAnalysis(projectName, "directoryStructureWithFileContent", directoryStructureWithContent, true, isProjectRoot)
     }
     spinner.text = "Analyzing the project directory for codebase shape..."
-    const directoryInferrenceResponse = await inferProjectDirectory(directoryStructure, useOpenAi, false, isVerbose)
+    const directoryInferrenceResponse = await inferProjectDirectory(directoryStructure.name, useOpenAi, false, isVerbose)
     const directoryInferrence = JSON.parse(directoryInferrenceResponse ?? "")
 
     if (isVerbose) {
@@ -165,19 +171,14 @@ async function analyseDirectoryStructure(path: string, isVerbose: boolean | unde
 }
 
 async function analyzeCode(tokenLength: number, directoryStructureWithoutLockFile: FileNode, useOpenAi: boolean, allowStreaming: boolean, isVerbose: boolean, projectName: string, isProjectRoot: boolean) {
-    if (tokenLength <= 128000) {
-        await analyzeAndWriteCodeInference(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose, projectName, isProjectRoot)
-    } else {
 
-
-        console.log("This codebase is too big for full code analysis, but we've performed an AST analysis.")
-        writeAnalysis(projectName, "codeTokens", `Token length of entire codebase: ${tokenLength}, path: ${projectName}. AST analysis performed.`, isProjectRoot)
-    }
+    writeAnalysis(projectName, "codeTokens", `Token length of entire codebase: ${tokenLength}, path: ${projectName}. AST analysis performed.`, isProjectRoot)
+    await analyzeAndWriteCodeInference(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose, projectName, isProjectRoot)
 }
 
 async function analyzeAndWriteCodeInference(directoryStructureWithoutLockFile: FileNode, useOpenAi: boolean, allowStreaming: boolean, isVerbose: boolean, projectName: string, isProjectRoot: boolean) {
-    let codeInferrenceResponse = await analyzeCodebase(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose)
-    let interestingCodeResponse = await analyseInterestingCode(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose)
+    let codeInferrenceResponse: string | undefined = await analyzeCodebase(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose)
+    let interestingCodeResponse: string | undefined = await analyseInterestingCode(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose)
     // Concatenate the code inferrence and interesting code
     codeInferrenceResponse += interestingCodeResponse
     writeAnalysis(projectName, "codeInferrence", codeInferrenceResponse, false, isProjectRoot)
@@ -185,39 +186,41 @@ async function analyzeAndWriteCodeInference(directoryStructureWithoutLockFile: F
 
 async function analyseInterestingCode(directoryStructureWithoutLockFile: FileNode, useOpenAi: boolean, allowStreaming: boolean, isVerbose: boolean) {
     const spinner = ora('Analysing interesting code').start()
-    const interestingCode = await inferInterestingCode(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose)
+    const interestingCode = await inferInterestingCode(directoryStructureWithoutLockFile.name, useOpenAi, allowStreaming, isVerbose)
     let interestingCodeResponse = ""
     if (allowStreaming) {
         spinner.stop().clear()
-        for await (const chunk of interestingCode) {
+        for await (const chunk of interestingCode as Stream<ChatCompletionChunk>) {
             const message = chunk.choices[0]?.delta.content || ""
             process.stdout.write(message)
             interestingCodeResponse += message
         }
         process.stdout.write("\n")
     } else {
-        spinner.stopAndPersist({symbol: '✔️', text: interestingCode})
+        const interestingCodeAsString = interestingCode as string
+        spinner.stopAndPersist({symbol: '✔️', text: interestingCodeAsString})
 
-        interestingCodeResponse = interestingCode
+        interestingCodeResponse = interestingCodeAsString
     }
     return interestingCodeResponse
 }
 
 async function analyzeCodebase(directoryStructureWithoutLockFile: FileNode, useOpenAi: boolean, allowStreaming: boolean, isVerbose: boolean) {
     const spinner = ora('Reading Codebase and inferring code...').start()
-    const codeInferrence = await inferCode(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose)
+    const codeInferrence = await inferCode(directoryStructureWithoutLockFile.name, useOpenAi, allowStreaming, isVerbose)
     let codeInferrenceResponse = ""
     if (allowStreaming) {
         spinner.stop().clear()
-        for await (const chunk of codeInferrence) {
+        for await (const chunk of codeInferrence as Stream<ChatCompletionChunk>) {
             const message = chunk.choices[0]?.delta.content || ""
             process.stdout.write(message)
             codeInferrenceResponse += message
         }
         process.stdout.write("\n")
     } else {
-        spinner.stopAndPersist({symbol: '✔️', text: codeInferrence})
-        codeInferrenceResponse = codeInferrence
+        const codeInferrenceAsString = codeInferrence as string
+        spinner.stopAndPersist({symbol: '✔️', text: codeInferrenceAsString})
+        codeInferrenceResponse = codeInferrenceAsString
     }
     return codeInferrenceResponse
 }
@@ -253,7 +256,7 @@ async function inferDependenciesAndWriteAnalysis(sourceCodePath: string, directo
     let dependencyInferrenceResponse = ""
     if (allowStreaming) {
         spinner.stop().clear()
-        for await (const chunk of dependencyInferrence) {
+        for await (const chunk of dependencyInferrence as Stream<ChatCompletionChunk>) {
             const message = chunk.choices[0]?.delta.content || ""
             process.stdout.write(message)
             dependencyInferrenceResponse += message
@@ -262,9 +265,10 @@ async function inferDependenciesAndWriteAnalysis(sourceCodePath: string, directo
         process.stdout.write("\n")
 
     } else {
-        spinner.stopAndPersist({symbol: '✔️', text: dependencyInferrence})
+        const dependencyInferrenceAsString = dependencyInferrence as string
+        spinner.stopAndPersist({symbol: '✔️', text: dependencyInferrenceAsString})
 
-        dependencyInferrenceResponse = dependencyInferrence
+        dependencyInferrenceResponse = dependencyInferrenceAsString
     }
     writeAnalysis(projectName, "dependencyInferrence", dependencyInferrenceResponse, isProjectRoot)
 }

@@ -11,7 +11,9 @@ export const command = 'prepareReport <path|p> [verbose|v] [streaming|s]'
 export const describe = 'Prepare a report based on the analysis'
 
 
-export function builder(yargs) {
+import {Argv} from 'yargs'
+
+export function builder(yargs: Argv) {
     yargs.positional('path', {
         alias: 'p',
         describe: 'Path to the analysis',
@@ -31,11 +33,13 @@ export function builder(yargs) {
     return yargs
 }
 
-export async function handler(argv) {
-    const isVerbose = argv.verbose || argv.v || false
+import {Arguments} from 'yargs'
+
+export async function handler(argv: Arguments) {
+    const isVerbose = argv.verbose as boolean || argv.v as boolean || false
     const useOpenAi = true
-    const allowStreaming = argv.streaming || argv.s || false
-    const projectDir = argv.path || argv.p
+    const allowStreaming = argv.streaming as boolean || argv.s as boolean || false
+    const projectDir = argv.path as string || argv.p as string
     const config = readConfig()
 
     const rootDir = config.ANALYSIS_DIR
@@ -78,9 +82,10 @@ export async function handler(argv) {
             process.stdout.write("\n")
 
         } else {
-            spinner.stopAndPersist({symbol: '✔️', text: report})
+            const reportAsText = report as string
+            spinner.stopAndPersist({symbol: '✔️', text: reportAsText})
 
-            readmeResponse = report as string
+            readmeResponse = reportAsText
         }
     }
 }
