@@ -157,7 +157,8 @@ async function analyseDirectoryStructure(path: string, isVerbose: boolean | unde
         writeAnalysis(projectName, "directoryStructureWithFileContent", directoryStructureWithContent, true, isProjectRoot)
     }
     spinner.text = "Analyzing the project directory for codebase shape..."
-    const directoryInferrenceResponse = await inferProjectDirectory(directoryStructure.name, useOpenAi, false, isVerbose)
+
+    const directoryInferrenceResponse = await inferProjectDirectory(JSON.stringify(directoryStructure), useOpenAi, false, isVerbose)
     const directoryInferrence = JSON.parse(directoryInferrenceResponse ?? "")
 
     if (isVerbose) {
@@ -187,7 +188,7 @@ async function analyzeAndWriteCodeInference(directoryStructureWithoutLockFile: F
 
 async function analyseInterestingCode(directoryStructureWithoutLockFile: FileNode, useOpenAi: boolean, allowStreaming: boolean, isVerbose: boolean) {
     const spinner = ora('Analysing interesting code').start()
-    const interestingCode = await inferInterestingCode(directoryStructureWithoutLockFile.name, useOpenAi, allowStreaming, isVerbose)
+    const interestingCode = await inferInterestingCode(JSON.stringify(directoryStructureWithoutLockFile), useOpenAi, allowStreaming, isVerbose)
     let interestingCodeResponse = ""
     if (allowStreaming) {
         spinner.stop().clear()
@@ -208,7 +209,7 @@ async function analyseInterestingCode(directoryStructureWithoutLockFile: FileNod
 
 async function analyzeCodebase(directoryStructureWithoutLockFile: FileNode, useOpenAi: boolean, allowStreaming: boolean, isVerbose: boolean) {
     const spinner = ora('Reading Codebase and inferring code...').start()
-    const codeInferrence = await inferCode(directoryStructureWithoutLockFile.name, useOpenAi, allowStreaming, isVerbose)
+    const codeInferrence = await inferCode(JSON.stringify(directoryStructureWithoutLockFile), useOpenAi, allowStreaming, isVerbose)
     let codeInferrenceResponse = ""
     if (allowStreaming) {
         spinner.stop().clear()
@@ -247,12 +248,12 @@ async function inferDependenciesAndWriteAnalysis(sourceCodePath: string, directo
     if (isVerbose) {
         console.log({sourceCodePath, projectName, directoryInferrence})
     }
+
     if (!directoryInferrence.dependenciesFile || directoryInferrence.dependenciesFile.trim() === '') {
         return
     }
     const depenencyFile = fs.readFileSync(`${sourceCodePath}/${directoryInferrence.dependenciesFile}`, 'utf-8')
     const dependencyInferrence = await inferDependency(depenencyFile, directoryInferrence.workflow, useOpenAi, allowStreaming, isVerbose)
-
 
     let dependencyInferrenceResponse = ""
     if (allowStreaming) {

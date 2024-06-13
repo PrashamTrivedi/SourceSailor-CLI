@@ -206,43 +206,7 @@ export const inferDependency = async (
 
 }
 
-export const inferFileImports = async (
-    fileContents: {isAst: boolean; contents: string},
-    useOpenAi: boolean = true,
-    isStreaming: boolean = false,
-    isVerbose: boolean = false
-): Promise<string | undefined | Stream<ChatCompletionChunk>> => {
-    const openai = getOpenAiClient(useOpenAi, isVerbose)
-    const model = await getModel(useOpenAi)
-    const filePrompt = fileContents.isAst ? prompts.fileImportsAST : prompts.fileImports
-    const codeFile = fileContents.contents
-    const userMessage = fileContents.isAst ? `<FileAST>${JSON.stringify(codeFile)}</FileAST>` : `<FileStructure>${JSON.stringify(codeFile)}</FileStructure>`
 
-    const compatibilityMessage = createPrompt(
-        `${prompts.commonSystemPrompt.prompt}\n${filePrompt.prompt}`,
-        userMessage,
-        isVerbose
-    )
-    await calculateTokensAndCheckLimit(compatibilityMessage, model, isVerbose, modelLimits)
-    const tools: ChatCompletionTool[] = []
-
-    if (filePrompt.params) {
-        tools.push(
-            {
-                type: "function",
-                function: {
-                    name: filePrompt.params.name,
-                    parameters: filePrompt.params.parameters,
-                    description: filePrompt.params.description
-                }
-            }
-        )
-    }
-
-    return callApiAndReturnResult(openai, model, compatibilityMessage, isStreaming, isVerbose, tools)
-
-
-}
 
 export const inferCode = async (
     code: string,
