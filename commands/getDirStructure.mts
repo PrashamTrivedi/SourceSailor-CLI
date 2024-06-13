@@ -3,7 +3,7 @@ import {readConfig} from "../utils.mjs"
 import {getDirStructure, FileNode} from "../directoryProcessor.mjs"
 
 
-export const command = 'dirStructure <path|p> [verbose|v] [withContent|c] [ignore|i]'
+export const command = 'dirStructure <path|p> [verbose|v] [withContent|c]  [ignore|i]'
 
 export const describe = 'Get Directory Structure'
 
@@ -28,8 +28,9 @@ export function builder(yargs: Argv) {
         alias: 'c',
         describe: 'Include content of files in the analysis',
         type: 'boolean',
-        default: true
+        default: true,
     })
+
 
     yargs.option('ignore', {
         alias: 'i',
@@ -46,6 +47,7 @@ export async function handler(argv: Arguments) {
     const isVerbose = argv.verbose as boolean || argv.v as boolean || false
     const ignore = argv.ignore as string[] || argv.i as string[] || []
     const withContent = argv.withContent as boolean || argv.c as boolean || false
+    const withTreeStructure = argv.withTreeStructure as boolean || argv.t as boolean || false
     if (isVerbose) {
         console.log({argv})
     }
@@ -57,8 +59,10 @@ export async function handler(argv: Arguments) {
     const path = argv.path as string
     const directoryStructureWithContent = await getDirStructure(path, ignore, isVerbose)
 
-    if (!withContent) {
+    if (withContent) {
+        console.log(JSON.stringify(directoryStructureWithContent))
 
+    } else {
         const directoryStructure = JSON.parse(JSON.stringify(directoryStructureWithContent))
 
         function deleteContent(file: FileNode) {
@@ -74,12 +78,10 @@ export async function handler(argv: Arguments) {
             deleteContent(file)
         }
         console.log(JSON.stringify(directoryStructure))
-    } else {
-
-        console.log(JSON.stringify(directoryStructureWithContent))
     }
-
 }
+
 export const usage = '$0 <cmd> [args]'
 
 export const aliases = ['h', 'help']
+
