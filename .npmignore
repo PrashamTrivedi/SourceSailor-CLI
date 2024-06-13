@@ -1,0 +1,39 @@
+
+# Ignore all reports and analysis files
+**/.SourceSailor/
+**/analysis/
+**/errors/
+
+# Ignore GitHub Actions configuration
+.github/
+
+# Ignore TypeScript source files
+**/*.mts
+**/*.ts
+
+# Ignore all Markdown files except README.md
+*.md
+!README.md
+
+# Ignore TypeScript configuration
+tsconfig.json
+
+# Ignore IDE-specific files
+.vscode/
+.idea/
+*.iml
+
+# Ignore development dependencies
+node_modules/
+
+# Ignore npm configuration
+.npmrc
+
+# Ingore aider
+.aider*
+
+# Ignore Devcontainer
+.devcontainer/
+
+# Ignore any tgz files
+*.tgz
