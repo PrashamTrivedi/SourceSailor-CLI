@@ -3,13 +3,17 @@ import path from 'path'
 import {getAnalysis, readConfig} from '../utils.mjs'
 import {generateReadme} from '../openai.mjs'
 import ora from "ora"
+import {ChatCompletionChunk} from "openai/resources/index.mjs"
+import {Stream} from "openai/streaming.mjs"
 
 export const command = 'prepareReport <path|p> [verbose|v] [streaming|s]'
 
 export const describe = 'Prepare a report based on the analysis'
 
 
-export function builder(yargs) {
+import {Argv} from 'yargs'
+
+export function builder(yargs: Argv) {
     yargs.positional('path', {
         alias: 'p',
         describe: 'Path to the analysis',
@@ -29,11 +33,13 @@ export function builder(yargs) {
     return yargs
 }
 
-export async function handler(argv) {
-    const isVerbose = argv.verbose || argv.v || false
+import {Arguments} from 'yargs'
+
+export async function handler(argv: Arguments) {
+    const isVerbose = argv.verbose as boolean || argv.v as boolean || false
     const useOpenAi = true
-    const allowStreaming = argv.streaming || argv.s || false
-    const projectDir = argv.path || argv.p
+    const allowStreaming = argv.streaming as boolean || argv.s as boolean || false
+    const projectDir = argv.path as string || argv.p as string
     const config = readConfig()
 
     const rootDir = config.ANALYSIS_DIR
@@ -63,20 +69,24 @@ export async function handler(argv) {
     }
     const report = await generateReadme(directoryStructure, dependencyInference, codeInference, true, allowStreaming, isVerbose)
 
-    let readmeResponse = ""
-    if (allowStreaming) {
-        spinner.stop().clear()
-        for await (const chunk of report) {
-            const message = chunk.choices[0]?.delta.content || ""
-            process.stdout.write(message)
-            readmeResponse += message
+    if (report) {
+
+        let readmeResponse = ""
+        if (allowStreaming) {
+            spinner.stop().clear()
+            for await (const chunk of (report as Stream<ChatCompletionChunk>)) {
+                const message = chunk.choices[0]?.delta.content || ""
+                process.stdout.write(message)
+                readmeResponse += message
+            }
+            process.stdout.write("\n")
+
+        } else {
+            const reportAsText = report as string
+            spinner.stopAndPersist({symbol: '✔️', text: reportAsText})
+
+            readmeResponse = reportAsText
         }
-        process.stdout.write("\n")
-
-    } else {
-        spinner.stopAndPersist({symbol: '✔️', text: report})
-
-        readmeResponse = report
     }
 }
 export const usage = '$0 <cmd> [args]'

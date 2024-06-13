@@ -22,6 +22,9 @@ jobs:
     - name: Run NPM CI
       run: npm ci
 
+    - name: Build the package
+      run: npm run build
+      
     - name: Publish To NPM
       run: npm publish
       env:

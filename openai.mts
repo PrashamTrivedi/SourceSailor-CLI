@@ -6,17 +6,35 @@ import {get_encoding} from "tiktoken"
 import {Stream} from "openai/streaming"
 import {prompts} from "./prompts.mjs"
 import {readConfig} from "./utils.mjs"
+import {ChatCompletion} from "openai/resources/index.mjs"
+import {ChatCompletionChunk} from "openai/src/resources/index.js"
+import {ChatCompletionCreateParamsBase, ChatCompletionMessageParam, ChatCompletionTool} from "openai/resources/chat/completions.mjs"
 
 
-export const calculateTokens = async (messages) => {
+
+interface ModelLimit {
+    name: string
+    limit: number
+}
+interface Function {
+    name: string
+    parameters: Record<string, any>
+    description: string
+}
+interface Tool {
+    type: string
+    function: Function
+}
+
+export const calculateTokens = async (messages: ChatCompletionMessageParam[]): Promise<number> => {
     const chatMessages = messages.filter(message => message.content?.length ?? 0 > 0).map(message => message.content)
     const enc = await get_encoding("cl100k_base")
     const tokens = enc.encode(chatMessages.join('\n'))
     return tokens.length
 
 }
-function createPrompt(systemPrompt, userPrompt, isVerbose) {
-    const compatibilityMessage = [{
+function createPrompt(systemPrompt: string, userPrompt: string, isVerbose: boolean): ChatCompletionMessageParam[] {
+    const compatibilityMessage: ChatCompletionMessageParam[] = [{
         role: "system",
         content: systemPrompt
     }, {
@@ -30,7 +48,12 @@ function createPrompt(systemPrompt, userPrompt, isVerbose) {
     return compatibilityMessage
 }
 
-async function calculateTokensAndCheckLimit(compatibilityMessage, model, isVerbose, modelLimits) {
+async function calculateTokensAndCheckLimit(
+    compatibilityMessage: ChatCompletionMessageParam[],
+    model: string,
+    isVerbose: boolean,
+    modelLimits: ModelLimit[]
+): Promise<void> {
     const tokens = await calculateTokens(compatibilityMessage)
     const modelLimit = modelLimits.find(modelLimit => modelLimit.name === model)
     const modelLimitTokens = modelLimit?.limit ?? 0
@@ -42,8 +65,15 @@ async function calculateTokensAndCheckLimit(compatibilityMessage, model, isVerbo
     }
 }
 
-async function callApiAndReturnResult(openai, model, compatibilityMessage, isStreaming, isVerbose, tools) {
-    const apiParams = {
+async function callApiAndReturnResult(
+    openai: OpenAI,
+    model: string,
+    compatibilityMessage: ChatCompletionMessageParam[],
+    isStreaming: boolean,
+    isVerbose: boolean,
+    tools?: ChatCompletionTool[]
+): Promise<string | undefined | Stream<ChatCompletionChunk>> {
+    const apiParams: ChatCompletionCreateParamsBase = {
         model,
         messages: compatibilityMessage,
         temperature: 0,
@@ -60,19 +90,22 @@ async function callApiAndReturnResult(openai, model, compatibilityMessage, isStr
     }
     const matchJson = await openai.chat.completions.create(apiParams)
     if (isVerbose && !isStreaming) {
-        console.log(JSON.stringify(matchJson.choices[0], null, 2))
+        console.log(JSON.stringify((matchJson as ChatCompletion).choices[0], null, 2))
     }
     if (isStreaming) {
-        return matchJson
-    } else if (matchJson.choices[0].finish_reason === 'tool_calls' || (matchJson.choices[0].message?.tool_calls?.length ?? 0 > 0)) {
-        const response = matchJson.choices[0].message?.tool_calls?.flatMap(toolCall => toolCall?.function?.arguments)
-        return response?.join('')
+        return matchJson as Stream<ChatCompletionChunk>
     } else {
-        return matchJson.choices[0].message.content || undefined
+        const completionData = matchJson as ChatCompletion
+        if (completionData.choices[0].finish_reason === 'tool_calls' || (completionData.choices[0].message?.tool_calls?.length ?? 0 > 0)) {
+            const response = completionData.choices[0].message?.tool_calls?.flatMap(toolCall => toolCall?.function?.arguments)
+            return response?.join('')
+        } else {
+            return completionData.choices[0].message.content || undefined
+        }
     }
 }
 
-async function getModel(useOpenAi, isVerbose = false) {
+async function getModel(useOpenAi: boolean, isVerbose: boolean = false): Promise<string> {
     const openai = getOpenAiClient(useOpenAi, isVerbose)
     const config = readConfig()
 
@@ -90,7 +123,7 @@ async function getModel(useOpenAi, isVerbose = false) {
 }
 
 
-function getOpenAiClient(useOpenAi, isVerbose = false) {
+function getOpenAiClient(useOpenAi: boolean, isVerbose: boolean = false): OpenAI {
     const config = readConfig()
 
 
@@ -116,7 +149,12 @@ const modelLimits = [
     {name: 'gpt-3.5-turbo-16k', limit: 16000}
 ]
 
-export const inferProjectDirectory = async (projectDirectory, useOpenAi = true, isStreaming = false, isVerbose = false) => {
+export const inferProjectDirectory = async (
+    projectDirectory: string,
+    useOpenAi: boolean = true,
+    isStreaming: boolean = false,
+    isVerbose: boolean = false
+): Promise<string | undefined> => {
     const openai = getOpenAiClient(useOpenAi, isVerbose)
     const model = await getModel(useOpenAi)
 
@@ -127,22 +165,32 @@ export const inferProjectDirectory = async (projectDirectory, useOpenAi = true, 
     )
 
     await calculateTokensAndCheckLimit(compatibilityMessage, model, isVerbose, modelLimits)
-    const tools = [
-        {
-            type: "function",
-            function: {
-                name: prompts.rootUnderstanding.params.name,
-                parameters: prompts.rootUnderstanding.params.parameters,
-                description: prompts.rootUnderstanding.params.description
+    const tools: ChatCompletionTool[] = []
+
+    if (prompts.rootUnderstanding.params) {
+        tools.push(
+            {
+                type: "function",
+                function: {
+                    name: prompts.rootUnderstanding.params.name,
+                    parameters: prompts.rootUnderstanding.params.parameters,
+                    description: prompts.rootUnderstanding.params.description
+                }
             }
-        }
-    ]
-    return callApiAndReturnResult(openai, model, compatibilityMessage, isStreaming, isVerbose, tools)
+        )
+    }
+    return callApiAndReturnResult(openai, model, compatibilityMessage, isStreaming, isVerbose, tools) as Promise<string | undefined>
 
 
 }
 
-export const inferDependency = async (dependencyFile, workflow, useOpenAi = true, isStreaming = false, isVerbose = false) => {
+export const inferDependency = async (
+    dependencyFile: string,
+    workflow: string,
+    useOpenAi: boolean = true,
+    isStreaming: boolean = false,
+    isVerbose: boolean = false
+): Promise<string | undefined | Stream<ChatCompletionChunk>> => {
     const openai = getOpenAiClient(useOpenAi, isVerbose)
     const model = await getModel(useOpenAi)
     const compatibilityMessage = createPrompt(
@@ -158,36 +206,14 @@ export const inferDependency = async (dependencyFile, workflow, useOpenAi = true
 
 }
 
-export const inferFileImports = async (fileContents, useOpenAi = true, isStreaming = false, isVerbose = false) => {
-    const openai = getOpenAiClient(useOpenAi, isVerbose)
-    const model = await getModel(useOpenAi)
-    const filePrompt = fileContents.isAst ? prompts.fileImportsAST : prompts.fileImports
-    const codeFile = fileContents.contents
-    const userMessage = fileContents.isAst ? `<FileAST>${JSON.stringify(codeFile)}</FileAST>` : `<FileStructure>${JSON.stringify(codeFile)}</FileStructure>`
-
-    const compatibilityMessage = createPrompt(
-        `${prompts.commonSystemPrompt.prompt}\n${filePrompt.prompt}`,
-        userMessage,
-        isVerbose
-    )
-    await calculateTokensAndCheckLimit(compatibilityMessage, model, isVerbose, modelLimits)
-    const tools = [
-        {
-            type: "function",
-            function: {
-                name: filePrompt.params.name,
-                parameters: filePrompt.params.parameters,
-                description: filePrompt.params.description
-            }
-        }
-    ]
-
-    return callApiAndReturnResult(openai, model, compatibilityMessage, isStreaming, isVerbose, tools)
 
 
-}
-
-export const inferCode = async (code, useOpenAi = true, isStreaming = false, isVerbose = false) => {
+export const inferCode = async (
+    code: string,
+    useOpenAi: boolean = true,
+    isStreaming: boolean = false,
+    isVerbose: boolean = false
+): Promise<string | undefined | Stream<ChatCompletionChunk>> => {
     const openai = getOpenAiClient(useOpenAi, isVerbose)
     const model = await getModel(useOpenAi)
     const compatibilityMessage = createPrompt(
@@ -201,7 +227,12 @@ export const inferCode = async (code, useOpenAi = true, isStreaming = false, isV
     return callApiAndReturnResult(openai, model, compatibilityMessage, isStreaming, isVerbose)
 
 }
-export const inferInterestingCode = async (code, useOpenAi = true, isStreaming = false, isVerbose = false) => {
+export const inferInterestingCode = async (
+    code: string,
+    useOpenAi: boolean = true,
+    isStreaming: boolean = false,
+    isVerbose: boolean = false
+): Promise<string | undefined | Stream<ChatCompletionChunk>> => {
     const openai = getOpenAiClient(useOpenAi, isVerbose)
     const model = await getModel(useOpenAi)
     const compatibilityMessage = createPrompt(
@@ -214,34 +245,14 @@ export const inferInterestingCode = async (code, useOpenAi = true, isStreaming =
 
 }
 
-export const inferCodeAST = async (codeAST, useOpenAi = true, isStreaming = false, isVerbose = false) => {
-    const openai = getOpenAiClient(useOpenAi, isVerbose)
-    const model = await getModel(useOpenAi)
-    const compatibilityMessage = createPrompt(
-        `${prompts.commonSystemPrompt.prompt}\n${prompts.codeUnderstandingAST.prompt}`,
-        `<CodeAST>${JSON.stringify(codeAST)}</CodeAST>`,
-        isVerbose
-    )
-    await calculateTokensAndCheckLimit(compatibilityMessage, model, isVerbose, modelLimits)
-
-
-    return callApiAndReturnResult(openai, model, compatibilityMessage, isStreaming, isVerbose)
-
-}
-export const inferInterestingCodeAST = async (codeAST, useOpenAi = true, isStreaming = false, isVerbose = false) => {
-    const openai = getOpenAiClient(useOpenAi, isVerbose)
-    const model = await getModel(useOpenAi)
-    const compatibilityMessage = createPrompt(
-        prompts.interestingCodePartsAST.prompt,
-        `<CodeAST>${JSON.stringify(codeAST)}</CodeAST>`,
-        isVerbose
-    )
-    await calculateTokensAndCheckLimit(compatibilityMessage, model, isVerbose, modelLimits)
-    return callApiAndReturnResult(openai, model, compatibilityMessage, isStreaming, isVerbose)
-
-}
-
-export const generateReadme = async (directoryStructure, dependencyInference, codeInference, useOpenAi = true, isStreaming = false, isVerbose = false) => {
+export const generateReadme = async (
+    directoryStructure: string,
+    dependencyInference: string,
+    codeInference: string,
+    useOpenAi: boolean = true,
+    isStreaming: boolean = false,
+    isVerbose: boolean = false
+): Promise<string | undefined | Stream<ChatCompletionChunk>> => {
     const openai = getOpenAiClient(useOpenAi, isVerbose)
     const model = await getModel(useOpenAi)
     const compatibilityMessage = createPrompt(
@@ -254,7 +265,12 @@ export const generateReadme = async (directoryStructure, dependencyInference, co
     return callApiAndReturnResult(openai, model, compatibilityMessage, isStreaming, isVerbose)
 }
 
-export const generateMonorepoReadme = async (monorepoInferrenceInfo, useOpenAi = true, isStreaming = false, isVerbose = false) => {
+export const generateMonorepoReadme = async (
+    monorepoInferrenceInfo: string,
+    useOpenAi: boolean = true,
+    isStreaming: boolean = false,
+    isVerbose: boolean = false
+): Promise<string | undefined | Stream<ChatCompletionChunk>> => {
     const openai = getOpenAiClient(useOpenAi, isVerbose)
     const model = await getModel(useOpenAi)
     const compatibilityMessage = createPrompt(
@@ -267,8 +283,7 @@ export const generateMonorepoReadme = async (monorepoInferrenceInfo, useOpenAi =
     return callApiAndReturnResult(openai, model, compatibilityMessage, isStreaming, isVerbose)
 }
 
-export const listModels = async (isVerbose = false) => {
-
+export const listModels = async (isVerbose: boolean = false): Promise<string[]> => {
     const openai = getOpenAiClient(true, isVerbose)
     const models = await openai.models.list()
 

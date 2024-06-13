@@ -12,7 +12,7 @@ export function readConfig() {
     return {}
 }
 
-export function addAnalysisInGitIgnore(projectRoot) {
+export function addAnalysisInGitIgnore(projectRoot: string) {
     // First check if the project root has gitignore file, if the file is not found don't create one.
     // If the file is found, append .SourceSailor/analysis to the file.
     const gitignoreFile = path.join(projectRoot, '.gitignore')
@@ -24,7 +24,7 @@ export function addAnalysisInGitIgnore(projectRoot) {
     }
 }
 
-export function writeAnalysis(projectRoot, analysisName, analysisContent, isJson = false, isProjectRoot = false) {
+export function writeAnalysis(projectRoot: string, analysisName: string, analysisContent: any, isJson = false, isProjectRoot = false) {
     const analysisDir = isProjectRoot ? path.join(projectRoot, '.SourceSailor', 'analysis') : path.join(projectRoot, 'analysis')
     if (!fs.existsSync(analysisDir)) {
         fs.mkdirSync(analysisDir, {recursive: true})
@@ -38,7 +38,7 @@ export function writeAnalysis(projectRoot, analysisName, analysisContent, isJson
     }
 }
 
-export function writeError(projectRoot, errorType, errorContent, errorMssage) {
+export function writeError(projectRoot: string, errorType: string, errorContent: any, errorMssage: string) {
     const errorDir = path.join(projectRoot, 'errors')
     if (!fs.existsSync(errorDir)) {
         fs.mkdirSync(errorDir, {recursive: true})
@@ -49,8 +49,8 @@ export function writeError(projectRoot, errorType, errorContent, errorMssage) {
     fs.writeFileSync(errorFile, `${errorContent}\n\n${errorMssage}`)
 }
 
-export function getAnalysis(projectRoot, isProjectRoot) {
-    const analysis = {}
+export function getAnalysis(projectRoot: string, isProjectRoot: boolean) {
+    const analysis: Record<string, any> = {}
     const analysisDir = isProjectRoot ? path.join(projectRoot, '.SourceSailor', 'analysis') : path.join(projectRoot, 'analysis')
     if (!fs.existsSync(analysisDir)) {
         return analysis
