@@ -1,7 +1,7 @@
 import fs from 'fs'
 import path from 'path'
 import {getAnalysis, readConfig} from '../utils.mjs'
-import {generateReadme} from '../openai.mjs'
+import OpenAIInferrence, {LlmInterface} from "../openai.mjs"
 import ora from "ora"
 import {ChatCompletionChunk} from "openai/resources/index.mjs"
 import {Stream} from "openai/streaming.mjs"
@@ -42,6 +42,8 @@ export async function handler(argv: Arguments) {
     const projectDir = argv.path as string || argv.p as string
     const config = readConfig()
 
+    const openai = new OpenAIInferrence()
+    const llmInterface: LlmInterface = openai
     const rootDir = config.ANALYSIS_DIR
 
     const isProjectRoot = rootDir === 'p'
@@ -67,7 +69,7 @@ export async function handler(argv: Arguments) {
     if (isVerbose) {
         console.log({directoryStructure, dependencyInference, codeInference})
     }
-    const report = await generateReadme(directoryStructure, dependencyInference, codeInference, true, allowStreaming, isVerbose)
+    const report = await llmInterface.generateReadme(directoryStructure, dependencyInference, codeInference, true, allowStreaming, isVerbose)
 
     if (report) {
 
