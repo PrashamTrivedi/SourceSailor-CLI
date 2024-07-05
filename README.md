@@ -2,7 +2,7 @@
 
 [![NPM Version](https://img.shields.io/npm/v/sourcesailor.svg?logo=npm&label=sourcesailor)](https://www.npmjs.com/package/sourcesailor?activeTab=readme)
 
-[!Testing](https://github.com/PrashamTrivedi/SourceSailor-CLI/actions/workflows/testAndReport.yml/badge.svg)
+[![Testing](https://github.com/PrashamTrivedi/SourceSailor-CLI/actions/workflows/testAndReport.yml/badge.svg)](https://github.com/PrashamTrivedi/SourceSailor-CLI/actions/workflows/testAndReport.yml/badge.svg)
 
 Navigate through your source code with ease.
 
