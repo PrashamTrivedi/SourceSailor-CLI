@@ -70,5 +70,5 @@ jobs:
         echo "## File Coverage" >> $GITHUB_STEP_SUMMARY
         echo "| File | Lines | Statements | Functions | Branches |" >> $GITHUB_STEP_SUMMARY
         echo "|------|-------|------------|-----------|----------|" >> $GITHUB_STEP_SUMMARY
-        jq -r 'to_entries[] | select(.key != "total") | "| \(.key) | \(.value.lines.pct)% | \(.value.statements.pct)% | \(.value.functions.pct)% | \(.value.branches.pct)% |"' ./coverage/coverage-summary.json >> $GITHUB_STEP_SUMMARY
+        jq -r 'to_entries[] | select(.key != "total") | (.key | sub("^/home/runner/work/[^/]+/[^/]+/"; "")) as $file | \($file)  | \(.value.lines.pct)% | \(.value.statements.pct)% | \(.value.functions.pct)% | \(.value.branches.pct)% |"' ./coverage/coverage-summary.json >> $GITHUB_STEP_SUMMARY
       
