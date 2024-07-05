@@ -140,9 +140,10 @@ The SourceSailor-CLI tool is structured around several key components, each serv
 - Iterate through prompts (Will be ongoing evaluation)
 - Use Openrouter to switch models (Not planning to use, will switch to Gemini and Claude for future versions, may be by using plugins)
 - Use more prompts and CoT to work around the project (Will be ongoing evaluation) 
-- Use tree sitter to get better ideas of the project and codebase :brain: (Can be core functionality of the CLI) (Already in the code)
-- Write some reports per prompt and then pass it to CoT to generate a confident report (Already in the code)
+- Add Anthropic and Gemini models (See [#3](https://github.com/PrashamTrivedi/SourceSailor-CLI/issues/3) and [#2](https://github.com/PrashamTrivedi/SourceSailor-CLI/issues/2) respectively)
+- ❌ Use tree sitter to get better ideas of the project and codebase :brain: (Can be core functionality of the CLI) (Already in the code) (Removed from the core functionality,See [#9](https://github.com/PrashamTrivedi/SourceSailor-CLI/issues/9) )
+- ✅ Write some reports per prompt and then pass it to CoT to generate a confident report (Already in the code)
 - Use the report as RAG. :bulb: (Highly speculative)
-- Use CLI decorators like colors and other decorators
-- Customised additional ignore list, AKA passing those files like we pass in gitignore
-- (Done) [NPM Package](https://www.npmjs.com/package/sourcesailor?activeTab=readme)
+- ✅ Use CLI decorators like colors and other decorators
+- ✅ Customised additional ignore list, AKA passing those files like we pass in gitignore
+- ✅  [NPM Package](https://www.npmjs.com/package/sourcesailor?activeTab=readme)
