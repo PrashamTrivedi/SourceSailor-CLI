@@ -50,7 +50,7 @@ jobs:
         echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
    
    - name: Post test summary v2
-      run: |
+     run: |
         echo "## Test Results" >> $GITHUB_STEP_SUMMARY
         echo "Total tests: $(cat ./coverage/test-summary.json | jq '.numTotalTests')" >> $GITHUB_STEP_SUMMARY
         echo "Passed tests: $(cat ./coverage/test-summary.json | jq '.numPassedTests')" >> $GITHUB_STEP_SUMMARY
