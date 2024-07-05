@@ -6,7 +6,7 @@ export default defineConfig({
         root: '.', // Set this to your project root
         coverage: {
             provider: 'istanbul',
-            reporter: ['json', 'html', 'lcov'],
+            reporter: ['json', 'json-summary', 'text-summary', 'html'],
             // reportsDirectory: './coverage',
 
             include: ['**/*.mts', '**/openai.mts', '**/utils.mts', '**/*.mjs'], // Adjust this to match your source files
