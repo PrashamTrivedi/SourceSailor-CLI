@@ -44,8 +44,23 @@ jobs:
         REPO_ROOT="${GITHUB_WORKSPACE}"
         REPO_NAME="${GITHUB_REPOSITORY#*/}"
         PATH_PREFIX="${REPO_ROOT}/${REPO_NAME}/"
+
+         # Get the actual path prefix from the first file in the coverage summary
+        ACTUAL_PREFIX=$(jq -r 'to_entries | map(select(.key != "total")) | .[0].key | capture("(?<prefix>.*/)(?:[^/]+)$").prefix' ./coverage/coverage-summary.json)
+        
+        echo "Calculated PATH_PREFIX: $PATH_PREFIX"
+        echo "Actual PATH_PREFIX from coverage data: $ACTUAL_PREFIX"
+        
+        # Use the actual prefix if it's different from our calculation
+        if [ "$ACTUAL_PREFIX" != "$PATH_PREFIX" ]; then
+          echo "Using actual prefix from coverage data"
+          PATH_PREFIX=$ACTUAL_PREFIX
+        fi
+        
+        echo "Final PATH_PREFIX: $PATH_PREFIX"
         
         echo "# Test and Coverage Summary" >> $GITHUB_STEP_SUMMARY
+        
         
         echo "## Test Results" >> $GITHUB_STEP_SUMMARY
         echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
