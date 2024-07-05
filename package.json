@@ -12,7 +12,7 @@
     "link": "npm run build && npm link",
     "start": "node dist/index.js",
     "test": "vitest run --coverage",
-    "test:ci": "vitest run --coverage"
+    "test:ci": "vitest run --coverage --reporter=default --reporter=github-actions"
   },
   "keywords": [
     "OpenAI",
