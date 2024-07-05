@@ -93,7 +93,7 @@ jobs:
         echo "## File Coverage" >> $GITHUB_STEP_SUMMARY
         echo "| File | Lines | Statements | Functions | Branches |" >> $GITHUB_STEP_SUMMARY
         echo "|------|-------|------------|-----------|----------|" >> $GITHUB_STEP_SUMMARY
-        jq -r --arg prefix "$PATH_PREFIX" '
+        jq -r --arg prefix "$PATH_PREFIX" --arg repo "$GITHUB_REPOSITORY" --arg branch "$BRANCH_NAME" '
           to_entries[] 
           | select(.key != "total") 
           | .key as $fullPath 
