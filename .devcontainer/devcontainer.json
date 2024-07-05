@@ -10,7 +10,16 @@
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	// "forwardPorts": [],
+	"forwardPorts": [
+		4173
+	],
+	"appPort": "4173:4173",
+	"portsAttributes": {
+		"4173": {
+			"label": "Reports",
+			"onAutoForward": "openBrowser",
+		}
+	},
 	// Use 'postCreateCommand' to run commands after the container is created.
 	// Configure tool-specific properties.
 	"customizations": {

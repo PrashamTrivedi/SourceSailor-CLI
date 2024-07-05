@@ -9,3 +9,4 @@ steps*.md
 .SourceSailor/analysis
 .aider*
 dist/
+coverage/
