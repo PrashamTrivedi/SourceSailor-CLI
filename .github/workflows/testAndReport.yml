@@ -40,6 +40,11 @@ jobs:
     
     - name: Post test and coverage summary
       run: |
+        # Determine the path prefix to remove
+        REPO_ROOT="${GITHUB_WORKSPACE}"
+        REPO_NAME="${GITHUB_REPOSITORY#*/}"
+        PATH_PREFIX="${REPO_ROOT}/${REPO_NAME}/"
+        
         echo "# Test and Coverage Summary" >> $GITHUB_STEP_SUMMARY
         
         echo "## Test Results" >> $GITHUB_STEP_SUMMARY
@@ -70,25 +75,12 @@ jobs:
         echo "## File Coverage" >> $GITHUB_STEP_SUMMARY
         echo "| File | Lines | Statements | Functions | Branches |" >> $GITHUB_STEP_SUMMARY
         echo "|------|-------|------------|-----------|----------|" >> $GITHUB_STEP_SUMMARY
-        jq -r '
+        jq -r --arg prefix "$PATH_PREFIX" '
           to_entries[] 
           | select(.key != "total") 
           | .key as $fullPath 
           | .value as $coverage 
           | $fullPath 
-          | capture("^/workspaces/SourceSailor-CLI/(?<file>.*)$").file // $fullPath as $truncatedPath 
+          | ltrimstr($prefix) as $truncatedPath 
           | "| \($truncatedPath) | \($coverage.lines.pct)% | \($coverage.statements.pct)% | \($coverage.functions.pct)% | \($coverage.branches.pct)% |"
-        ' ./coverage/coverage-summary.json >> $GITHUB_STEP_SUMMARY
-
-        echo "## File Coverage 2" >> $GITHUB_STEP_SUMMARY
-        echo "| File | Lines | Statements | Functions | Branches |" >> $GITHUB_STEP_SUMMARY
-        echo "|------|-------|------------|-----------|----------|" >> $GITHUB_STEP_SUMMARY
-        jq -r '
-          to_entries[] 
-          | select(.key != "total") 
-          | .key as $fullPath 
-          | .value as $coverage 
-          | $fullPath 
-          | capture("^(?:/home/runner/work/[^/]+/[^/]+/)?(?<file>.*)$").file // $fullPath as $truncatedPath 
-          | "| \($truncatedPath) | \($coverage.lines.pct)% | \($coverage.statements.pct)% | \($coverage.functions.pct)% | \($coverage.branches.pct)% | \($fullPath) |"
         ' ./coverage/coverage-summary.json >> $GITHUB_STEP_SUMMARY
