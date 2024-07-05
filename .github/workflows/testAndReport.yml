@@ -58,6 +58,9 @@ jobs:
         fi
         
         echo "Final PATH_PREFIX: $PATH_PREFIX"
+
+        # Get the current branch name
+        BRANCH_NAME=${GITHUB_HEAD_REF:-${GITHUB_REF#refs/heads/}}
         
         echo "# Test and Coverage Summary" >> $GITHUB_STEP_SUMMARY
         
@@ -97,5 +100,5 @@ jobs:
           | .value as $coverage 
           | $fullPath 
           | ltrimstr($prefix) as $truncatedPath 
-          | "| \($truncatedPath) | \($coverage.lines.pct)% | \($coverage.statements.pct)% | \($coverage.functions.pct)% | \($coverage.branches.pct)% |"
+          | "| [\($truncatedPath)](https://github.com/\($repo)/blob/\($branch)/\($truncatedPath)) | \($coverage.lines.pct)% | \($coverage.statements.pct)% | \($coverage.functions.pct)% | \($coverage.branches.pct)% |"
         ' ./coverage/coverage-summary.json >> $GITHUB_STEP_SUMMARY
