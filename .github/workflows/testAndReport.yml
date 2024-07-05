@@ -37,5 +37,34 @@ jobs:
       with:
         name: coverage-report
         path: coverage/
-
+    
+    - name: Post test summary
+      run: |
+        echo "## Test Results" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
+        cat ./coverage/test-summary.json | jq '.testResults[] | {name: .name, status: .status, duration: .duration}' >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        echo "## Coverage Summary" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`json" >> $GITHUB_STEP_SUMMARY
+        cat ./coverage/test-summary.json | jq >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
    
+   - name: Post test summary v2
+      run: |
+        echo "## Test Results" >> $GITHUB_STEP_SUMMARY
+        echo "Total tests: $(cat ./coverage/test-summary.json | jq '.numTotalTests')" >> $GITHUB_STEP_SUMMARY
+        echo "Passed tests: $(cat ./coverage/test-summary.json | jq '.numPassedTests')" >> $GITHUB_STEP_SUMMARY
+        echo "Failed tests: $(cat ./coverage/test-summary.json | jq '.numFailedTests')" >> $GITHUB_STEP_SUMMARY
+        echo "Names of failed tests:" >> $GITHUB_STEP_SUMMARY
+        cat ./coverage/test-summary.json | jq '
+        .testResults[] | 
+        select(.status == "failed") |
+        .name
+        ' >> $GITHUB_STEP_SUMMARY
+        echo "## Coverage Summary" >> $GITHUB_STEP_SUMMARY
+        echo "Overall coverage:" >> $GITHUB_STEP_SUMMARY
+        cat ./coverage/lcov.info | awk -F',' '
+        /SF:/ { file=$0 }
+        /LF:/ { lines=$2 }
+        /LH:/ { covered=$2; print file, covered/lines*100 "%"}
+        ' | sed 's/SF://' >> $GITHUB_STEP_SUMMARY
