@@ -72,10 +72,11 @@ jobs:
         echo "|------|-------|------------|-----------|----------|" >> $GITHUB_STEP_SUMMARY
         jq -r '
         to_entries[] 
+         to_entries[] 
         | select(.key != "total") 
         | .key as $fullPath 
         | .value as $coverage 
         | $fullPath 
-        | capture("^(?:/home/runner/work/[^/]+/[^/]+/)?(?<file>.*)$").file // $fullPath as $file 
-        | "| \($file) | \($coverage.lines.pct)% | \($coverage.statements.pct)% | \($coverage.functions.pct)% | \($coverage.branches.pct)% |"
+        | capture("^(?:/home/runner/work/[^/]+/[^/]+/)?(?<file>.*)$").file // $fullPath as $truncatedPath 
+        | "| \($truncatedPath) | \($coverage.lines.pct)% | \($coverage.statements.pct)% | \($coverage.functions.pct)% | \($coverage.branches.pct)% | \($fullPath) |"        
         ' ./coverage/coverage-summary.json >> $GITHUB_STEP_SUMMARY
