@@ -68,6 +68,19 @@ jobs:
         jq -r '.total | to_entries[] | "| \(.key) | \(.value.total) | \(.value.covered) | \(.value.skipped) | \(.value.pct)% |"' ./coverage/coverage-summary.json >> $GITHUB_STEP_SUMMARY
         
         echo "## File Coverage" >> $GITHUB_STEP_SUMMARY
+        echo "| File | Lines | Statements | Functions | Branches | Full Path |" >> $GITHUB_STEP_SUMMARY
+        echo "|------|-------|------------|-----------|----------|-----------|" >> $GITHUB_STEP_SUMMARY
+        jq -r '
+          to_entries[] 
+          | select(.key != "total") 
+          | .key as $fullPath 
+          | .value as $coverage 
+          | $fullPath 
+          | capture("^(?:/home/runner/work/[^/]+/[^/]+/)?(?<file>.*)$").file // $fullPath as $truncatedPath 
+          | "| \($truncatedPath) | \($coverage.lines.pct)% | \($coverage.statements.pct)% | \($coverage.functions.pct)% | \($coverage.branches.pct)% | \($fullPath) |"
+        ' ./coverage/coverage-summary.json >> $GITHUB_STEP_SUMMARY
+
+        echo "## File Coverage 2" >> $GITHUB_STEP_SUMMARY
         echo "| File | Lines | Statements | Functions | Branches |" >> $GITHUB_STEP_SUMMARY
         echo "|------|-------|------------|-----------|----------|" >> $GITHUB_STEP_SUMMARY
         jq -r '
