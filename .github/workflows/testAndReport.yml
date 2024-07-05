@@ -32,9 +32,6 @@ jobs:
     - name: Run tests
       run: npm run test
 
-    - name: Generate test coverage report
-      run: npx jest --coverage
-
     - name: Upload coverage report
       uses: actions/upload-artifact@v3
       with:
@@ -44,6 +41,10 @@ jobs:
     - name: Post test summary
       run: |
         echo "## Test Results" >> $GITHUB_STEP_SUMMARY
-        echo "$(npx jest --ci --json --testLocationInResults --outputFile=jest-results.json)" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        npm run test -- --reporter=json | jq '.testResults[] | {name: .name, status: .status, duration: .duration}' >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
         echo "## Coverage Summary" >> $GITHUB_STEP_SUMMARY
-        echo "$(cat coverage/coverage-summary.json)" >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+        cat coverage/coverage-summary.json >> $GITHUB_STEP_SUMMARY
+        echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
