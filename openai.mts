@@ -40,6 +40,7 @@ export class OpenAIInferrence implements LlmInterface {
         {name: 'gpt-4-0125-preview', limit: 128000},
         {name: 'gpt-4-turbo', limit: 128000},
         {name: 'gpt-4o', limit: 128000},
+        {name: 'gpt-4o-mini', limit: 128000},
         {name: 'gpt-4-1106-preview', limit: 128000},
         {name: 'gpt-4-turbo-preview', limit: 128000},
         {name: 'gpt-3.5-turbo', limit: 4000},
