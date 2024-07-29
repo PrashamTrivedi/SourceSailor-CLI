@@ -6,8 +6,13 @@ export function readConfig() {
     const homeDir = os.homedir()
     const configFile = path.join(homeDir, '.SourceSailor', 'config.json')
     if (fs.existsSync(configFile)) {
-        const config = JSON.parse(fs.readFileSync(configFile, 'utf8'))
-        return config
+        try {
+            const config = JSON.parse(fs.readFileSync(configFile, 'utf8'))
+            return config
+        } catch (error) {
+            console.error('Error parsing config file:', error)
+        }
+        return {}
     }
     return {}
 }
@@ -61,6 +66,7 @@ export function getAnalysis(projectRoot: string, isProjectRoot: boolean) {
         const fullPath = path.join(analysisDir, entry)
         const isDirectory = fs.statSync(fullPath).isDirectory()
 
+        // console.log({entry})
         const fileName = path.basename(entry, path.extname(entry))
         if (isDirectory) {
             analysis[fileName] = getAnalysis(fullPath, false)

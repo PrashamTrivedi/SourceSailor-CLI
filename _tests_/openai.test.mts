@@ -2,7 +2,6 @@ import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest'
 import OpenAI from 'openai'
 import OpenAIInferrence from "../openai.mjs"
 
-
 // Mock OpenAI
 vi.mock('openai')
 
@@ -399,4 +398,3 @@ describe('OpenAIInferrence', () => {
     })
 
 })
-
