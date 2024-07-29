@@ -1,9 +1,13 @@
-import {describe, it, expect, vi, beforeEach} from 'vitest'
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest'
 import OpenAI from 'openai'
 import OpenAIInferrence from "../openai.mjs"
-import {Stream} from "openai/streaming"
+
+
 // Mock OpenAI
 vi.mock('openai')
+
+// Mock console.log to prevent output during tests
+vi.spyOn(console, 'log').mockImplementation(() => { })
 
 describe('OpenAIInferrence', () => {
     let openAIInferrence: OpenAIInferrence
@@ -22,6 +26,10 @@ describe('OpenAIInferrence', () => {
         };
         (OpenAI as any).mockImplementation(() => mockOpenAI)
         openAIInferrence = new OpenAIInferrence()
+    })
+
+    afterEach(() => {
+        vi.resetAllMocks()
     })
 
     describe('inferProjectDirectory', () => {
@@ -43,14 +51,41 @@ describe('OpenAIInferrence', () => {
             expect(result).toBe('{"projectType":"nodejs","mainLanguage":"typescript"}')
         })
 
-        // it('should handle streaming responses', async () => {
-        //     const mockStream = new Stream()
-        //     mockOpenAI.chat.completions.create.mockResolvedValue(mockStream)
-        //     mockOpenAI.models.list.mockResolvedValue({data: [{id: 'gpt-4'}]})
+        it('should handle responses without tool_calls', async () => {
+            const mockResponse = {
+                choices: [
+                    {
+                        message: {
+                            content: '{"projectType":"python","mainLanguage":"python"}',
+                        },
+                    },
+                ],
+            }
+            mockOpenAI.chat.completions.create.mockResolvedValue(mockResponse)
+            mockOpenAI.models.list.mockResolvedValue({data: [{id: 'gpt-4'}]})
 
-        //     const result = await openAIInferrence.inferProjectDirectory('{"src": {}, "package.json": {}}', true, true, false)
-        //     expect(result).toBe(mockStream)
-        // })
+            const result = await openAIInferrence.inferProjectDirectory('{"src": {}, "requirements.txt": {}}', true, false, false)
+            expect(result).toBe('{"projectType":"python","mainLanguage":"python"}')
+        })
+
+        it('should handle empty responses', async () => {
+            const mockResponse = {
+                choices: [
+                    {
+                        message: {
+                            content: '',
+                        },
+                    },
+                ],
+            }
+            mockOpenAI.chat.completions.create.mockResolvedValue(mockResponse)
+            mockOpenAI.models.list.mockResolvedValue({data: [{id: 'gpt-4'}]})
+
+            const result = await openAIInferrence.inferProjectDirectory('{}', true, false, false)
+            expect(result).toBeUndefined()
+        })
+
+
 
         it('should throw an error if the prompt is too long', async () => {
             mockOpenAI.models.list.mockResolvedValue({data: [{id: 'gpt-3.5-turbo'}]})
@@ -360,7 +395,7 @@ describe('OpenAIInferrence', () => {
             await expect(openAIInferrence.inferProjectDirectory('{"src": {}}', true, false, false)).rejects.toThrow('OpenAI API is down')
         })
 
-      
+
     })
 
 })

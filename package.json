@@ -1,7 +1,7 @@
 {
   "name": "sourcesailor",
-  "version": "1.4.3",
-  "description": "",
+  "version": "1.5.0",
+  "description": "A CLI tool for analyzing and documenting codebases",
   "type": "module",
   "main": "dist/index.mjs",
   "bin": {
@@ -12,12 +12,17 @@
     "link": "npm run build && npm link",
     "start": "node dist/index.js",
     "test": "vitest run --coverage",
-    "test:ci": "vitest run --coverage --reporter=default --reporter=json --reporter=github-actions"
+    "test:watch": "vitest --coverage",
+    "test:ci": "vitest run --coverage --reporter=default --reporter=json --reporter=github-actions",
+    "lint": "eslint . --ext .mts",
+    "lint:fix": "eslint . --ext .mts --fix"
   },
   "keywords": [
     "OpenAI",
     "Documentation",
-    "gitignore"
+    "gitignore",
+    "Codebase Analysis",
+    "CLI"
   ],
   "repository": {
     "type": "git",
@@ -31,13 +36,17 @@
     "openai": "^4.33.1",
     "ora": "^8.0.1",
     "tiktoken": "^1.0.13",
-    "yargs": "^17.7.2"
+    "yargs": "^17.7.2",
+    "boxen": "^7.1.1"
   },
   "devDependencies": {
     "@types/node": "^20.12.13",
     "@types/yargs": "^17.0.32",
     "@vitest/coverage-istanbul": "^1.6.0",
     "typescript": "^5.4.5",
-    "vitest": "^1.6.0"
+    "vitest": "^1.6.0",
+    "@typescript-eslint/eslint-plugin": "^7.3.1",
+    "@typescript-eslint/parser": "^7.3.1",
+    "eslint": "^8.57.0"
   }
 }

@@ -72,7 +72,7 @@ export async function handler(argv: Arguments) {
 
     const openai = new OpenAIInferrence()
 
-    let llmInterface: LlmInterface = openai
+    const llmInterface: LlmInterface = openai
 
 
     if (isProjectRoot) {
@@ -195,7 +195,7 @@ async function analyzeAndWriteCodeInference(directoryStructureWithoutLockFile: F
     projectName: string, isProjectRoot: boolean, llmInterface: LlmInterface) {
     let codeInferrenceResponse: string | undefined = await analyzeCodebase(directoryStructureWithoutLockFile, useOpenAi
         , allowStreaming, isVerbose, llmInterface)
-    let interestingCodeResponse: string | undefined = await analyseInterestingCode(directoryStructureWithoutLockFile, useOpenAi,
+    const interestingCodeResponse: string | undefined = await analyseInterestingCode(directoryStructureWithoutLockFile, useOpenAi,
         allowStreaming, isVerbose, llmInterface)
     // Concatenate the code inferrence and interesting code
     codeInferrenceResponse += interestingCodeResponse

@@ -10,3 +10,4 @@ steps*.md
 .aider*
 dist/
 coverage/
+tasks/

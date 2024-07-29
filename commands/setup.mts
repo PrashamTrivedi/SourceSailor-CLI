@@ -48,7 +48,7 @@ export function handler(argv: Arguments) {
     } catch (error) {
         console.error('Error parsing config file:', error)
     }
-    let config = {
+    const config = {
         OPENAI_API_KEY: argv.apiKey || configData.OPENAI_API_KEY,
         DEFAULT_OPENAI_MODEL: argv.model || configData.DEFAULT_OPENAI_MODEL,
         ANALYSIS_DIR: argv.analysisDir || configData.ANALYSIS_DIR
