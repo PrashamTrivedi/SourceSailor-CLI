@@ -1,3 +1,4 @@
+// @ts-nocheck
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest'
 import {readConfig, addAnalysisInGitIgnore, writeAnalysis, writeError, getAnalysis} from '../utils.mjs'
 import fs from 'fs'

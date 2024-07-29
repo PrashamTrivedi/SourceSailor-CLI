@@ -1,7 +1,6 @@
 import fs from 'fs'
 import path from "path"
 import ignore from 'ignore'
-import {dir} from "console"
 
 const pathsToIgnore = ['.git']
 const extentionsToSkipContent = ['.jpg', '.jpeg', '.png', '.gif', '.ico', '.mp4', '.svg', '.pdf', '.doc', '.db', '.sqlite', '.docx', '.xls', '.xlsx']
@@ -38,22 +37,22 @@ export async function getDirStructure(dirPath: string, otherIgnorePaths: string[
     }).add(pathsToIgnore)
 
     function matchesWildcard(path: string, pattern: string): boolean {
-        const regexPattern = pattern.replace(/\*/g, '.*').replace(/\?/g, '.');
-        const regex = new RegExp(`^${regexPattern}$`);
-        return regex.test(path);
+        const regexPattern = pattern.replace(/\*/g, '.*').replace(/\?/g, '.')
+        const regex = new RegExp(`^${regexPattern}$`)
+        return regex.test(path)
     }
 
     function customIgnores(path: string): boolean {
-        if (path.includes('node_modules')) return true;
+        if (path.includes('node_modules')) return true
         return pathsToIgnore.some(ignoredPath => {
             if (ignoredPath.includes('*') || ignoredPath.includes('?')) {
-                return matchesWildcard(path, ignoredPath);
+                return matchesWildcard(path, ignoredPath)
             }
             if (ignoredPath.endsWith('/')) {
-                return path.startsWith(ignoredPath) || path === ignoredPath.slice(0, -1);
+                return path.startsWith(ignoredPath) || path === ignoredPath.slice(0, -1)
             }
-            return path === ignoredPath || path.startsWith(`${ignoredPath}/`);
-        });
+            return path === ignoredPath || path.startsWith(`${ignoredPath}/`)
+        })
     }
 
     function getJsonFromDirectory(dirPath: string): FileNode | undefined {
@@ -97,7 +96,7 @@ export async function getDirStructure(dirPath: string, otherIgnorePaths: string[
             if (customIgnores(relativePath)) {
                 if (verbose) console.log({ignored: file})
                 continue
-            } 
+            }
 
             const isDirectory: boolean = fs.statSync(fullPath).isDirectory()
             if (isDirectory) {

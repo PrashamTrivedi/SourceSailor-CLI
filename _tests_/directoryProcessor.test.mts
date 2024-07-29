@@ -1,6 +1,7 @@
+// @ts-nocheck
 import {describe, it, expect, vi} from 'vitest'
-import {getDirStructure} from '../directoryProcessor'
-import fs from 'fs'
+import {getDirStructure} from '../directoryProcessor.mjs'
+import fs, {PathLike} from 'fs'
 import ignore from 'ignore'
 
 vi.mock('fs')
@@ -112,19 +113,19 @@ describe('directoryProcessor', () => {
 })
 
 function setupMocks(mockStructure: any) {
-  vi.mocked(fs.existsSync).mockImplementation((path: string) => {
+  vi.mocked(fs.existsSync).mockImplementation((path: fs.PathLike) => {
     return pathExists(mockStructure, path)
   })
 
-  vi.mocked(fs.readFileSync).mockImplementation((path: string) => {
+  vi.mocked(fs.readFileSync).mockImplementation((path: PathLike) => {
     return getFileContent(mockStructure, path)
   })
 
-  vi.mocked(fs.readdirSync).mockImplementation((path: string) => {
+  vi.mocked(fs.readdirSync).mockImplementation((path: PathLike) => {
     return getDirectoryContents(mockStructure, path)
   })
 
-  vi.mocked(fs.statSync).mockImplementation((path: string) => {
+  vi.mocked(fs.statSync).mockImplementation((path: PathLike) => {
     return {
       isDirectory: () => isDirectory(mockStructure, path),
     } as fs.Stats
@@ -160,8 +161,8 @@ function setupMocks(mockStructure: any) {
   })
 }
 
-function pathExists(structure: any, path: string): boolean {
-  const parts = path.split('/').filter(p => p !== '')
+function pathExists(structure: any, path: PathLike): boolean {
+  const parts = path.toString().split('/').filter(p => p !== '')
   let current = structure
   for (const part of parts) {
     if (current[part] === undefined) return false
@@ -170,7 +171,7 @@ function pathExists(structure: any, path: string): boolean {
   return true
 }
 
-function getFileContent(structure: any, path: string): string {
+function getFileContent(structure: any, path: PathLike): string {
   const parts = path.split('/').filter(p => p !== '')
   let current = structure
   for (const part of parts) {
@@ -179,7 +180,7 @@ function getFileContent(structure: any, path: string): string {
   return current
 }
 
-function getDirectoryContents(structure: any, path: string): string[] {
+function getDirectoryContents(structure: any, path: PathLike): string[] {
   const parts = path.split('/').filter(p => p !== '')
   let current = structure
   for (const part of parts) {
@@ -188,7 +189,7 @@ function getDirectoryContents(structure: any, path: string): string[] {
   return Object.keys(current)
 }
 
-function isDirectory(structure: any, path: string): boolean {
+function isDirectory(structure: any, path: PathLike): boolean {
   const parts = path.split('/').filter(p => p !== '')
   let current = structure
   for (const part of parts) {
