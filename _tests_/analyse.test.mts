@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest'
-import {handler} from '../commands/analyse.mts'
+import {handler} from '../commands/analyse.mjs'
 import * as directoryProcessor from '../directoryProcessor.mjs'
 import * as openai from '../openai.mjs'
 import * as utils from '../utils.mjs'
