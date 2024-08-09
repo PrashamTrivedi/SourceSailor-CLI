@@ -10,8 +10,8 @@ import {ChatCompletionCreateParamsBase, ChatCompletionMessageParam, ChatCompleti
 interface ModelLimit {
     name: string
     limit: number
+    
 }
-
 interface Function {
     name: string
     parameters: Record<string, any>

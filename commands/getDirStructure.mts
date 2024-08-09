@@ -47,37 +47,48 @@ export async function handler(argv: Arguments) {
     const isVerbose = argv.verbose as boolean || argv.v as boolean || false
     const ignore = argv.ignore as string[] || argv.i as string[] || []
     const withContent = argv.withContent as boolean || argv.c as boolean || false
-    const withTreeStructure = argv.withTreeStructure as boolean || argv.t as boolean || false
     if (isVerbose) {
         console.log({argv})
     }
     const projectName = argv.path as string
 
+    if (isVerbose) {
+        console.log(`Project Name: ${projectName}`)
+    }
+
+    if (!projectName) {
+        console.error('Error: Project path is required')
+        return
+    }
 
     console.log(`Analysing ${chalk.redBright(projectName)}'s file structure to getting started.`)
     // const defaultSpinner = ora().start()
     const path = argv.path as string
-    const directoryStructureWithContent = await getDirStructure(path, ignore, isVerbose)
 
-    if (withContent) {
-        console.log(JSON.stringify(directoryStructureWithContent))
+    try {
+        const directoryStructureWithContent = await getDirStructure(path, ignore, isVerbose)
 
-    } else {
-        const directoryStructure = JSON.parse(JSON.stringify(directoryStructureWithContent))
+        if (withContent) {
+            console.log(JSON.stringify(directoryStructureWithContent))
+        } else {
+            const directoryStructure = JSON.parse(JSON.stringify(directoryStructureWithContent))
 
-        function deleteContent(file: FileNode) {
-            delete file.content
-            if (file.children) {
-                for (const child of file.children) {
-                    deleteContent(child)
+            function deleteContent(file: FileNode) {
+                delete file.content
+                if (file.children) {
+                    for (const child of file.children) {
+                        deleteContent(child)
+                    }
                 }
             }
-        }
 
-        for (const file of directoryStructure.children) {
-            deleteContent(file)
+            for (const file of directoryStructure.children) {
+                deleteContent(file)
+            }
+            console.log(JSON.stringify(directoryStructure))
         }
-        console.log(JSON.stringify(directoryStructure))
+    } catch (error) {
+        console.error('Error analyzing directory structure:', error)
     }
 }
 
