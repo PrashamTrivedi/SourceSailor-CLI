@@ -8,6 +8,17 @@ import {ChatCompletionChunk} from "openai/resources/index.mjs"
 import {Stream} from "openai/streaming.mjs"
 
 import chalk from "chalk"
+
+// Export these functions for testing
+export {
+    analyseDirectoryStructure,
+    inferDependenciesAndWriteAnalysis,
+    getDirectoryWithoutLockfile,
+    analyzeCode,
+    analyzeAndWriteCodeInference,
+    analyseInterestingCode,
+    analyzeCodebase
+}
 export const command = 'analyse <path|p> [verbose|v] [openai|o] [streaming|s] [ignore|i]'
 
 export const describe = 'Analyse the given directory structure to understand the project structure and dependencies'
@@ -205,44 +216,60 @@ async function analyzeAndWriteCodeInference(directoryStructureWithoutLockFile: F
 async function analyseInterestingCode(directoryStructureWithoutLockFile: FileNode,
     useOpenAi: boolean, allowStreaming: boolean, isVerbose: boolean, llmInterface: LlmInterface) {
     const spinner = ora('Analysing interesting code').start()
-    const interestingCode = await llmInterface.inferInterestingCode(JSON.stringify(directoryStructureWithoutLockFile), useOpenAi, allowStreaming, isVerbose)
-    let interestingCodeResponse = ""
-    if (allowStreaming) {
-        spinner.stop().clear()
-        for await (const chunk of interestingCode as Stream<ChatCompletionChunk>) {
-            const message = chunk.choices[0]?.delta.content || ""
-            process.stdout.write(message)
-            interestingCodeResponse += message
-        }
-        process.stdout.write("\n")
-    } else {
-        const interestingCodeAsString = interestingCode as string
-        spinner.stopAndPersist({symbol: '✔️', text: interestingCodeAsString})
+    try {
 
-        interestingCodeResponse = interestingCodeAsString
+        const interestingCode = await llmInterface.inferInterestingCode(JSON.stringify(directoryStructureWithoutLockFile), useOpenAi, allowStreaming, isVerbose)
+        let interestingCodeResponse = ""
+        if (allowStreaming) {
+            spinner.stop().clear()
+            for await (const chunk of interestingCode as Stream<ChatCompletionChunk>) {
+                const message = chunk.choices[0]?.delta.content || ""
+                process.stdout.write(message)
+                interestingCodeResponse += message
+            }
+            process.stdout.write("\n")
+        } else {
+            const interestingCodeAsString = interestingCode as string
+            spinner.stopAndPersist({symbol: '✔️', text: interestingCodeAsString})
+
+            interestingCodeResponse = interestingCodeAsString
+        }
+        return interestingCodeResponse
+    } catch (error) {
+        spinner.stopAndPersist({symbol: '❌', text: 'Error inferring code'})
+        console.error(error)
+        return `Error inferring interesting code: ${(error as Error).message}`
     }
-    return interestingCodeResponse
+
 }
 
 async function analyzeCodebase(directoryStructureWithoutLockFile: FileNode, useOpenAi: boolean,
     allowStreaming: boolean, isVerbose: boolean, llmInterface: LlmInterface) {
     const spinner = ora('Reading Codebase and inferring code...').start()
-    const codeInferrence = await llmInterface.inferCode(JSON.stringify(directoryStructureWithoutLockFile), useOpenAi, allowStreaming, isVerbose)
-    let codeInferrenceResponse = ""
-    if (allowStreaming) {
-        spinner.stop().clear()
-        for await (const chunk of codeInferrence as Stream<ChatCompletionChunk>) {
-            const message = chunk.choices[0]?.delta.content || ""
-            process.stdout.write(message)
-            codeInferrenceResponse += message
+    try {
+        const codeInferrence = await llmInterface.inferCode(JSON.stringify(directoryStructureWithoutLockFile), useOpenAi, allowStreaming, isVerbose)
+        let codeInferrenceResponse = ""
+        if (allowStreaming) {
+            spinner.stop().clear()
+            for await (const chunk of codeInferrence as Stream<ChatCompletionChunk>) {
+                const message = chunk.choices[0]?.delta.content || ""
+                process.stdout.write(message)
+                codeInferrenceResponse += message
+            }
+            process.stdout.write("\n")
+        } else {
+            const codeInferrenceAsString = codeInferrence as string
+            spinner.stopAndPersist({symbol: '✔️', text: codeInferrenceAsString})
+            codeInferrenceResponse = codeInferrenceAsString
         }
-        process.stdout.write("\n")
-    } else {
-        const codeInferrenceAsString = codeInferrence as string
-        spinner.stopAndPersist({symbol: '✔️', text: codeInferrenceAsString})
-        codeInferrenceResponse = codeInferrenceAsString
+        return codeInferrenceResponse
+    } catch (error) {
+        spinner.stopAndPersist({symbol: '❌', text: 'Error inferring code'})
+        if (isVerbose) {
+            console.error(error)
+        }
+        return `Error inferring code: ${(error as Error).message}`
     }
-    return codeInferrenceResponse
 }
 
 
