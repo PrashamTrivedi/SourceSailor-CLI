@@ -10,7 +10,8 @@ export default defineConfig({
             // reportsDirectory: './coverage',
 
             include: ['**/*.mts', '**/openai.mts', '**/utils.mts', '**/*.mjs'], // Adjust this to match your source files
-            exclude: ['node_modules', 'test', '**/*.d.ts'],
+            exclude: ['node_modules', '_test_/', '**/*.d.ts', 'dist/'],
+            all: true,
         },
         include: ['**/*.{test,spec}.mts'],
         reporters: process.env.GITHUB_ACTIONS ? ['json', 'html', 'github-actions'] : ['default', 'json', 'html'],

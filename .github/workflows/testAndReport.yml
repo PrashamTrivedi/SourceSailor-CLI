@@ -90,12 +90,12 @@ jobs:
         echo "|------|-------|---------|---------|------------|" >> $GITHUB_STEP_SUMMARY
         jq -r '.total | to_entries[] | "| \(.key) | \(.value.total) | \(.value.covered) | \(.value.skipped) | \(.value.pct)% |"' ./coverage/coverage-summary.json >> $GITHUB_STEP_SUMMARY
         
-        echo "## File Coverage" >> $GITHUB_STEP_SUMMARY
+         echo "## File Coverage" >> $GITHUB_STEP_SUMMARY
         echo "| File | Lines | Statements | Functions | Branches |" >> $GITHUB_STEP_SUMMARY
         echo "|------|-------|------------|-----------|----------|" >> $GITHUB_STEP_SUMMARY
         jq -r --arg prefix "$PATH_PREFIX" --arg repo "$GITHUB_REPOSITORY" --arg branch "$BRANCH_NAME" '
           to_entries[] 
-          | select(.key != "total") 
+          | select(.key != "total" and (.value.lines.total > 0 or .value.statements.total > 0 or .value.functions.total > 0 or .value.branches.total > 0)) 
           | .key as $fullPath 
           | .value as $coverage 
           | $fullPath 
