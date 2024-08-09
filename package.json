@@ -1,6 +1,6 @@
 {
   "name": "sourcesailor",
-  "version": "1.4.3",
+  "version": "1.4.4-0",
   "description": "A CLI tool for analyzing and documenting codebases",
   "type": "module",
   "main": "dist/index.mjs",
