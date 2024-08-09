@@ -14,8 +14,12 @@ import { Arguments } from 'yargs';
 
 export async function handler(argv: Arguments) {
     console.log(`List all available Configs`)
-    const config = readConfig()
-    console.log(config)
+    try {
+        const config = readConfig()
+        console.log(config)
+    } catch (error) {
+        console.error('Error reading config:', error)
+    }
 }
 
 export const usage = '$0 <cmd> [args]'

@@ -58,7 +58,7 @@ export async function handler(argv: Arguments) {
     if (isVerbose) {
         console.log({analysis: Object.keys(analysis)})
     }
-    if (!analysis) {
+    if (!analysis || Object.keys(analysis).length === 0) {
         spinner.fail('No analysis found, Please run analyse command first')
         return
     }
