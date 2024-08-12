@@ -31,6 +31,38 @@ describe('OpenAIInferrence', () => {
         vi.resetAllMocks()
     })
 
+    describe('Prompt Generation', () => {
+        it('should generate a prompt without user expertise', () => {
+            const systemPrompt = 'System prompt'
+            const userPrompt = 'User prompt'
+            const result = (openAIInferrence as any).createPrompt(systemPrompt, userPrompt, false)
+            expect(result).toEqual([
+                {role: 'system', content: 'System prompt'},
+                {role: 'user', content: 'User prompt'}
+            ])
+        })
+
+        it('should generate a prompt with user expertise', () => {
+            const systemPrompt = 'System prompt'
+            const userPrompt = 'User prompt'
+            const userExpertise = 'Expert'
+            const result = (openAIInferrence as any).createPrompt(systemPrompt, userPrompt, false, userExpertise)
+            expect(result).toEqual([
+                {role: 'system', content: 'System prompt\n<Expertise>"Expert"</Expertise>'},
+                {role: 'user', content: 'User prompt'}
+            ])
+        })
+
+        it('should log prompts when verbose is true', () => {
+            const consoleSpy = vi.spyOn(console, 'log')
+            const systemPrompt = 'System prompt'
+            const userPrompt = 'User prompt';
+            (openAIInferrence as any).createPrompt(systemPrompt, userPrompt, true)
+            expect(consoleSpy).toHaveBeenCalledWith('System Prompt: System prompt')
+            expect(consoleSpy).toHaveBeenCalledWith('User Prompt: User prompt')
+        })
+    })
+
     describe('inferProjectDirectory', () => {
         it('should return a valid inference for a project directory', async () => {
             const mockResponse = {

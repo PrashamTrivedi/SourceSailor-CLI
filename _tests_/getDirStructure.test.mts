@@ -5,6 +5,9 @@ import yargs from 'yargs'
 import {hideBin} from "yargs/helpers"
 import {command, describe as commandDescribe, builder, handler} from '../commands/getDirStructure.mjs'
 import * as directoryProcessor from '../directoryProcessor.mjs'
+import * as utils from '../utils.mjs'
+import * as inquirer from '@inquirer/prompts'
+import * as setExpertise from '../commands/setExpertise.mjs'
 
 const yargsSetup = yargs(hideBin(process.argv))
 
@@ -26,10 +29,16 @@ describe("Get Directory Structure Command Tests", () => {
     beforeEach(() => {
         vi.mock('fs')
         vi.mock('../directoryProcessor.mjs')
+        vi.mock('../utils.mjs')
+        vi.mock('@inquirer/prompts')
+        vi.mock('../commands/setExpertise.mjs')
         vi.spyOn(console, 'log').mockImplementation(() => { })
         vi.spyOn(console, 'error').mockImplementation(() => { })
 
-            ; (directoryProcessor.getDirStructure as Mock).mockResolvedValue(mockFileStructure)
+        ; (directoryProcessor.getDirStructure as Mock).mockResolvedValue(mockFileStructure)
+        vi.mocked(utils.readConfig).mockReturnValue({ANALYSIS_DIR: '/test', userExpertise: 'intermediate'} as any)
+        vi.mocked(inquirer.confirm).mockResolvedValue(false)
+        vi.mocked(setExpertise.handler).mockResolvedValue(undefined)
     })
 
     afterEach(() => {
@@ -142,5 +151,35 @@ describe("Get Directory Structure Command Tests", () => {
     //     expect(consoleSpy).toHaveBeenCalledWith("Error: Project path is required")
     // })
 
+    it('should prompt for user expertise if not set', async () => {
+        vi.mocked(utils.readConfig).mockReturnValue({ANALYSIS_DIR: '/test'} as any)
+        vi.mocked(inquirer.confirm).mockResolvedValue(true)
 
+        const parser = yargsSetup.command({command, describe: commandDescribe, builder, handler})
+        await new Promise((resolve) => {
+            parser.parse(`dirStructure ${mockProjectPath}`, (_err: any, argv: unknown) => {
+                resolve(argv)
+            })
+        })
+
+        expect(inquirer.confirm).toHaveBeenCalledWith({
+            message: "Would you like to set your expertise now?",
+            default: true
+        })
+        expect(setExpertise.handler).toHaveBeenCalled()
+    })
+
+    it('should not prompt for user expertise if already set', async () => {
+        vi.mocked(utils.readConfig).mockReturnValue({ANALYSIS_DIR: '/test', userExpertise: 'intermediate'} as any)
+
+        const parser = yargsSetup.command({command, describe: commandDescribe, builder, handler})
+        await new Promise((resolve) => {
+            parser.parse(`dirStructure ${mockProjectPath}`, (_err: any, argv: unknown) => {
+                resolve(argv)
+            })
+        })
+
+        expect(inquirer.confirm).not.toHaveBeenCalled()
+        expect(setExpertise.handler).not.toHaveBeenCalled()
+    })
 })

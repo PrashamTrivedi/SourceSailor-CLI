@@ -4,14 +4,20 @@ import {handler} from '../commands/prepareReport.mjs'
 import * as utils from '../utils.mjs'
 import OpenAIInferrence from '../openai.mjs'
 import ora from 'ora'
+import * as inquirer from '@inquirer/prompts'
+import * as setExpertise from '../commands/setExpertise.mjs'
 
 vi.mock('../utils.mjs')
 vi.mock('../openai.mjs')
 vi.mock('ora')
+vi.mock('@inquirer/prompts')
+vi.mock('../commands/setExpertise.mjs')
 
 describe('prepareReport command', () => {
   beforeEach(() => {
     vi.resetAllMocks()
+    vi.mocked(inquirer.confirm).mockResolvedValue(false)
+    vi.mocked(setExpertise.handler).mockResolvedValue(undefined)
   })
 
   it('should fail if no analysis is found', async () => {
@@ -150,5 +156,57 @@ describe('prepareReport command', () => {
       dependencyInference: 'mock dependency inference',
       codeInference: 'mock code inference',
     })
+  })
+
+  it('should prompt for user expertise if not set', async () => {
+    const mockAnalysis = {
+      directoryStructure: 'mock directory structure',
+      dependencyInference: 'mock dependency inference',
+      codeInferrence: 'mock code inference',
+    }
+    const mockReport = 'Generated README content'
+
+    vi.mocked(utils.readConfig).mockReturnValue({ANALYSIS_DIR: 'test-dir'})
+    vi.mocked(utils.getAnalysis).mockReturnValue(mockAnalysis)
+    vi.mocked(OpenAIInferrence).mockImplementation(() => ({
+      generateReadme: vi.fn().mockResolvedValue(mockReport),
+    } as any))
+    vi.mocked(ora).mockReturnValue({
+      start: vi.fn().mockReturnThis(),
+      stopAndPersist: vi.fn(),
+    } as any)
+    vi.mocked(inquirer.confirm).mockResolvedValue(true)
+
+    await handler({path: 'test-project', verbose: false, streaming: false} as any)
+
+    expect(inquirer.confirm).toHaveBeenCalledWith({
+      message: "Would you like to set your expertise now?",
+      default: true
+    })
+    expect(setExpertise.handler).toHaveBeenCalled()
+  })
+
+  it('should not prompt for user expertise if already set', async () => {
+    const mockAnalysis = {
+      directoryStructure: 'mock directory structure',
+      dependencyInference: 'mock dependency inference',
+      codeInferrence: 'mock code inference',
+    }
+    const mockReport = 'Generated README content'
+
+    vi.mocked(utils.readConfig).mockReturnValue({ANALYSIS_DIR: 'test-dir', userExpertise: 'intermediate'})
+    vi.mocked(utils.getAnalysis).mockReturnValue(mockAnalysis)
+    vi.mocked(OpenAIInferrence).mockImplementation(() => ({
+      generateReadme: vi.fn().mockResolvedValue(mockReport),
+    } as any))
+    vi.mocked(ora).mockReturnValue({
+      start: vi.fn().mockReturnThis(),
+      stopAndPersist: vi.fn(),
+    } as any)
+
+    await handler({path: 'test-project', verbose: false, streaming: false} as any)
+
+    expect(inquirer.confirm).not.toHaveBeenCalled()
+    expect(setExpertise.handler).not.toHaveBeenCalled()
   })
 })
