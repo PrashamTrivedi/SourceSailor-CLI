@@ -114,6 +114,12 @@ export async function handler(argv: Arguments) {
 
     // console.log(`Analysing ${chalk.redBright(projectName)}'s file structure to getting started.`)
     if (!directoryInferrence.isMonorepo) {
+        if (!directoryInferrence.programmingLanguage) {
+            const errorMessage = 'Programming language not defined for non-monorepo project'
+            console.error(chalk.red(errorMessage))
+            writeError(dirToWriteAnalysis, 'Analysis', errorMessage, 'Analysis stopped due to missing programming language')
+            throw new Error(errorMessage)
+        }
 
         await inferDependenciesAndWriteAnalysis(sourceCodePath, directoryInferrence, useOpenAi, allowStreaming, isVerbose, dirToWriteAnalysis, isProjectRoot, llmInterface, userExpertise)
         const directoryStructureWithoutLockFile = await getDirectoryWithoutLockfile(directoryInferrence, directoryStructureWithContent, isVerbose)
