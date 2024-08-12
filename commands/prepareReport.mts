@@ -5,6 +5,9 @@ import OpenAIInferrence, {LlmInterface} from "../openai.mjs"
 import ora from "ora"
 import {ChatCompletionChunk} from "openai/resources/index.mjs"
 import {Stream} from "openai/streaming.mjs"
+import chalk from "chalk"
+import {confirm} from '@inquirer/prompts'
+import {handler as setExpertiseHandler} from './setExpertise.mjs'
 
 export const command = 'prepareReport <path|p> [verbose|v] [streaming|s]'
 
@@ -41,7 +44,6 @@ export async function handler(argv: Arguments) {
     const allowStreaming = argv.streaming as boolean || argv.s as boolean || false
     const projectDir = argv.path as string || argv.p as string
     const config = readConfig()
-
     const openai = new OpenAIInferrence()
     const llmInterface: LlmInterface = openai
     const rootDir = config.ANALYSIS_DIR
@@ -88,6 +90,14 @@ export async function handler(argv: Arguments) {
             spinner.stopAndPersist({symbol: '✔️', text: reportAsText})
 
             readmeResponse = reportAsText
+        }
+    }
+
+    if (!config.userExpertise) {
+        console.log(chalk.yellow("User expertise is not set. Setting your expertise level will help us provide more tailored reports."))
+        const setExpertise = await confirm({message: "Would you like to set your expertise now?", default: true})
+        if (setExpertise) {
+            await setExpertiseHandler()
         }
     }
 }

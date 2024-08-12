@@ -1,13 +1,16 @@
 import chalk from "chalk"
-import {readConfig} from "../utils.mjs"
 import {getDirStructure, FileNode} from "../directoryProcessor.mjs"
-
+import {Argv} from 'yargs'
+import {Arguments} from 'yargs'
+import {readConfig} from "../utils.mjs"
+import {confirm} from '@inquirer/prompts'
+import {handler as setExpertiseHandler} from './setExpertise.mjs'
 
 export const command = 'dirStructure <path|p> [verbose|v] [withContent|c]  [ignore|i]'
 
 export const describe = 'Get Directory Structure'
 
-import {Argv} from 'yargs'
+
 
 export function builder(yargs: Argv) {
     yargs.positional('path', {
@@ -41,7 +44,6 @@ export function builder(yargs: Argv) {
     return yargs
 }
 
-import {Arguments} from 'yargs'
 
 export async function handler(argv: Arguments) {
     const isVerbose = argv.verbose as boolean || argv.v as boolean || false
@@ -51,6 +53,8 @@ export async function handler(argv: Arguments) {
         console.log({argv})
     }
     const projectName = argv.path as string
+
+    const config = readConfig()
 
     if (isVerbose) {
         console.log(`Project Name: ${projectName}`)
@@ -73,14 +77,11 @@ export async function handler(argv: Arguments) {
         } else {
             const directoryStructure = JSON.parse(JSON.stringify(directoryStructureWithContent))
 
-            function deleteContent(file: FileNode) {
-                delete file.content
-                if (file.children) {
-                    for (const child of file.children) {
-                        deleteContent(child)
-                    }
-                }
+            for (const file of directoryStructure.children) {
+                deleteContent(file)
             }
+
+
 
             for (const file of directoryStructure.children) {
                 deleteContent(file)
@@ -89,6 +90,23 @@ export async function handler(argv: Arguments) {
         }
     } catch (error) {
         console.error('Error analyzing directory structure:', error)
+    }
+
+    if (!config.userExpertise) {
+        console.log(chalk.yellow("User expertise is not set. Setting your expertise level will help us provide more tailored analysis."))
+        const setExpertise = await confirm({message: "Would you like to set your expertise now?", default: true})
+        if (setExpertise) {
+            await setExpertiseHandler()
+        }
+    }
+}
+
+function deleteContent(file: FileNode) {
+    delete file.content
+    if (file.children) {
+        for (const child of file.children) {
+            deleteContent(child)
+        }
     }
 }
 

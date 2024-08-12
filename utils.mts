@@ -17,6 +17,16 @@ export function readConfig() {
     return {}
 }
 
+export function writeConfig(config: any) {
+    const homeDir = os.homedir()
+    const configDir = path.join(homeDir, '.SourceSailor')
+    const configFile = path.join(configDir, 'config.json')
+    if (!fs.existsSync(configDir)) {
+        fs.mkdirSync(configDir, { recursive: true })
+    }
+    fs.writeFileSync(configFile, JSON.stringify(config, null, 2))
+}
+
 export function addAnalysisInGitIgnore(projectRoot: string) {
     // First check if the project root has gitignore file, if the file is not found don't create one.
     // If the file is found, append .SourceSailor/analysis to the file.

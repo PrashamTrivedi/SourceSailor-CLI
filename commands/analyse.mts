@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {FileNode, getDirStructure} from "../directoryProcessor.mjs"
 import OpenAIInferrence, {LlmInterface} from "../openai.mjs"
 import fs from 'fs'
@@ -6,8 +7,11 @@ import ora from 'ora'
 import {Arguments} from 'yargs'
 import {ChatCompletionChunk} from "openai/resources/index.mjs"
 import {Stream} from "openai/streaming.mjs"
-
 import chalk from "chalk"
+import {confirm} from '@inquirer/prompts'
+import {handler as setExpertiseHandler} from './setExpertise.mjs'
+
+
 
 // Export these functions for testing
 export {
@@ -73,7 +77,6 @@ export async function handler(argv: Arguments) {
         console.log(`Analyse the given directory structure to understand the project structure and dependencies: ${argv.path}`)
     }
     const config = readConfig()
-
     const rootDir = config.ANALYSIS_DIR
 
     const projectName = argv.path as string
@@ -95,6 +98,7 @@ export async function handler(argv: Arguments) {
     const isRoot = true
     const sourceCodePath = argv.path as string
     const dirToWriteAnalysis = isProjectRoot ? `${sourceCodePath}/.SourceSailor` : `${rootDir}/.SourceSailor/${projectName}`
+
 
     const {directoryInferrence, directoryStructureWithContent} = await analyseDirectoryStructure(path, isVerbose, isRoot,
         dirToWriteAnalysis, useOpenAi, isProjectRoot, ignore, llmInterface)
@@ -146,13 +150,19 @@ export async function handler(argv: Arguments) {
             }
         }
 
-
+    }
+    if (!config.userExpertise) {
+        console.log(chalk.yellow("User expertise is not set. Setting your expertise level will help us provide more tailored analysis."))
+        const setExpertise = await confirm({message: "Would you like to set your expertise now?", default: true})
+        if (setExpertise) {
+            await setExpertiseHandler()
+        }
     }
 }
 
 
 async function analyseDirectoryStructure(path: string, isVerbose: boolean | undefined,
-    isRoot: boolean, projectName: string, useOpenAi: any, isProjectRoot: boolean | undefined,
+    isRoot: boolean, projectName: string, useOpenAi: boolean, isProjectRoot: boolean | undefined,
     ignore: string[], llm: LlmInterface) {
     const spinner = ora('Analyzing the directory structure...').start()
     const directoryStructureWithContent = await getDirStructure(path, ignore, isVerbose)
@@ -314,7 +324,9 @@ async function getDirectoryWithoutLockfile(directoryInferrence: any, directorySt
     const lockfile = directoryInferrence.lockFile
     const directoryStructureWithoutLockFile = JSON.parse(JSON.stringify(directoryStructureWithContent))
     removeLockFile(directoryStructureWithoutLockFile, lockfile)
-
+    if (isVerbose) {
+        console.log({directoryStructureWithoutLockFile})
+    }
 
     return directoryStructureWithoutLockFile
 }
