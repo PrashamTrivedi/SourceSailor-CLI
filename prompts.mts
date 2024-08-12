@@ -25,7 +25,7 @@ interface Prompt {
 
 export const prompts: Record<string, Prompt> = {
     commonSystemPrompt: {
-        prompt: `You are a senior software developer who has an experience working with almost all the mainstream programming languages. You can browse through directory structure and read the files of a codebase. Your job is to create a report that will help a developer who is getting started with this codebase. The report must include: Programming language used, framework(s) used and the functionality provided by the codebase, this is essential for the developer. If you can figure out the workflows of the app you have to list them out along with relevant code lines.`
+        prompt: `You are a senior software developer who has an experience working with almost all the mainstream programming languages. You can browse through directory structure and read the files of a codebase. Your job is to create a report that will help a developer who is getting started with this codebase. The report must include: Programming language used, framework(s) used and the functionality provided by the codebase, this is essential for the developer. If you can figure out the workflows of the app you have to list them out along with relevant code lines. The expertise of the developer is mentioned in the <Expertise> tag, make sure your reports are clear and interesting enough to the developer, so that they can understand and start with this codebase.`
     },
     rootUnderstanding:
     {
@@ -133,7 +133,7 @@ export const prompts: Record<string, Prompt> = {
         prompt: `Based on the codebase provided to you in <Code> tag. Explain in the concise details what this codebase does. You will also outline the role and use of each file in the application.`
     },
     interestingCodeParts: {
-        prompt: `You are a senior software developer who has an experience working with almost all the mainstream programming languages. Based on the codebase provided to you in <Code> tag. List out the interesting parts of code. The definition of interesting part is, The interesting code is the code which is not common CRUD, it solves some issues uniquely. If this project doesn't have something interesting, simply say: I didn't find anything interesting in this codebase.`
+        prompt: `You are a senior software developer who has an experience working with almost all the mainstream programming languages. Based on the codebase provided to you in <Code> tag. List out the interesting parts of code. The definition of interesting part is, The interesting code is the code which is not common CRUD, it solves some issues uniquely. If this project doesn't have something interesting, simply say: I didn't find anything interesting in this codebase. The expertise of the developer is mentioned in the <Expertise> tag, make sure your reports are clear and interesting enough to the developer, so that they can understand and start with this codebase.`
     },
 
     consolidatedInferrenceForMonoRepo: {
