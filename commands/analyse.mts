@@ -6,6 +6,8 @@ import ora from 'ora'
 import {Arguments} from 'yargs'
 import {ChatCompletionChunk} from "openai/resources/index.mjs"
 import {Stream} from "openai/streaming.mjs"
+import inquirer from 'inquirer'
+import { handler as getExpertiseHandler } from './getExpertise.mts'
 
 import chalk from "chalk"
 
@@ -95,6 +97,23 @@ export async function handler(argv: Arguments) {
     const isRoot = true
     const sourceCodePath = argv.path as string
     const dirToWriteAnalysis = isProjectRoot ? `${sourceCodePath}/.SourceSailor` : `${rootDir}/.SourceSailor/${projectName}`
+
+    if (!config.expertise) {
+        const { setExpertise } = await inquirer.prompt([
+            {
+                type: 'confirm',
+                name: 'setExpertise',
+                message: 'Your expertise level is not set. Would you like to set it now?',
+                default: true,
+            },
+        ]);
+
+        if (setExpertise) {
+            await getExpertiseHandler(argv);
+        } else {
+            console.log('You can set your expertise level later using the setExpertise command.');
+        }
+    }
 
     const {directoryInferrence, directoryStructureWithContent} = await analyseDirectoryStructure(path, isVerbose, isRoot,
         dirToWriteAnalysis, useOpenAi, isProjectRoot, ignore, llmInterface)

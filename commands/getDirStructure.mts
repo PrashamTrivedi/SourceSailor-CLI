@@ -1,7 +1,8 @@
 import chalk from "chalk"
 import {readConfig} from "../utils.mjs"
 import {getDirStructure, FileNode} from "../directoryProcessor.mjs"
-
+import { handler as getExpertiseHandler } from './getExpertise.mts';
+import inquirer from 'inquirer';
 
 export const command = 'dirStructure <path|p> [verbose|v] [withContent|c]  [ignore|i]'
 
@@ -61,6 +62,36 @@ export async function handler(argv: Arguments) {
         return
     }
 
+    const homeDir = os.homedir()
+    const configFile = path.join(homeDir, '.SourceSailor', 'config.json')
+    let configData: Record<string, any> = {}
+
+    if (fs.existsSync(configFile)) {
+        const configFileData = fs.readFileSync(configFile, 'utf8')
+        try {
+            configData = JSON.parse(configFileData)
+        } catch (error) {
+            console.error('Error parsing config file:', error)
+        }
+    }
+
+    if (!configData.expertise) {
+        const { setExpertise } = await inquirer.prompt([
+            {
+                type: 'confirm',
+                name: 'setExpertise',
+                message: 'Your expertise level is not set. Would you like to set it now?',
+                default: true,
+            },
+        ]);
+
+        if (setExpertise) {
+            await getExpertiseHandler(argv);
+        } else {
+            console.log('You can set your expertise level later using the setExpertise command.');
+        }
+    }
+
     console.log(`Analysing ${chalk.redBright(projectName)}'s file structure to getting started.`)
     // const defaultSpinner = ora().start()
     const path = argv.path as string
@@ -95,4 +126,3 @@ export async function handler(argv: Arguments) {
 export const usage = '$0 <cmd> [args]'
 
 export const aliases = ['h', 'help']
-

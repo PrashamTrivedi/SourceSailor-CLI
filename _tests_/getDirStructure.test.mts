@@ -1,7 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {describe, it, expect, vi, beforeEach, afterEach, Mock} from 'vitest'
 import yargs from 'yargs'
-
+import fs from 'fs'
+import os from 'os'
+import path from 'path'
+import inquirer from 'inquirer'
 import {hideBin} from "yargs/helpers"
 import {command, describe as commandDescribe, builder, handler} from '../commands/getDirStructure.mjs'
 import * as directoryProcessor from '../directoryProcessor.mjs'
@@ -25,6 +28,9 @@ describe("Get Directory Structure Command Tests", () => {
 
     beforeEach(() => {
         vi.mock('fs')
+        vi.mock('os')
+        vi.mock('path')
+        vi.mock('inquirer')
         vi.mock('../directoryProcessor.mjs')
         vi.spyOn(console, 'log').mockImplementation(() => { })
         vi.spyOn(console, 'error').mockImplementation(() => { })
@@ -128,19 +134,49 @@ describe("Get Directory Structure Command Tests", () => {
         expect(consoleSpy).toHaveBeenCalledWith("Error analyzing directory structure:", mockError)
     })
 
-    // it("handles invalid project path", async () => {
-    //     const parser = yargsSetup.command({command, describe: commandDescribe, builder, handler})
-    //     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => { })
+    it("prompts user to set expertise level if not set", async () => {
+        const mockConfigPath = '/mock/home/.SourceSailor/config.json'
+        const mockConfigData = {}
 
-    //     await new Promise((resolve) => {
-    //         parser.parse(`dirStructure`, (_err: any, argv: unknown) => {
-    //             console.log({argv})
-    //             resolve(argv)
-    //         })
-    //     })
+        vi.mocked(os.homedir).mockReturnValue('/mock/home')
+        vi.mocked(path.join).mockReturnValue(mockConfigPath)
+        vi.mocked(fs.existsSync).mockReturnValue(true)
+        vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify(mockConfigData))
+        vi.mocked(inquirer.prompt).mockResolvedValue({ setExpertise: true })
 
-    //     expect(consoleSpy).toHaveBeenCalledWith("Error: Project path is required")
-    // })
+        const parser = yargsSetup.command({ command, describe: commandDescribe, builder, handler })
+        await new Promise((resolve) => {
+            parser.parse(`dirStructure ${mockProjectPath}`, (_err: any, argv: unknown) => {
+                resolve(argv)
+            })
+        })
 
+        expect(inquirer.prompt).toHaveBeenCalledWith([
+            {
+                type: 'confirm',
+                name: 'setExpertise',
+                message: 'Your expertise level is not set. Would you like to set it now?',
+                default: true,
+            },
+        ])
+    })
 
+    it("does not prompt user to set expertise level if already set", async () => {
+        const mockConfigPath = '/mock/home/.SourceSailor/config.json'
+        const mockConfigData = { expertise: 'Intermediate' }
+
+        vi.mocked(os.homedir).mockReturnValue('/mock/home')
+        vi.mocked(path.join).mockReturnValue(mockConfigPath)
+        vi.mocked(fs.existsSync).mockReturnValue(true)
+        vi.mocked(fs.readFileSync).mockReturnValue(JSON.stringify(mockConfigData))
+
+        const parser = yargsSetup.command({ command, describe: commandDescribe, builder, handler })
+        await new Promise((resolve) => {
+            parser.parse(`dirStructure ${mockProjectPath}`, (_err: any, argv: unknown) => {
+                resolve(argv)
+            })
+        })
+
+        expect(inquirer.prompt).not.toHaveBeenCalled()
+    })
 })

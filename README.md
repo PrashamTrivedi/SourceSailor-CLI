@@ -122,6 +122,34 @@ Options:
 - `--verbose`, `-v`: Enable verbose output
 - `--streaming`, `-s`: Stream the output to a file
 
+#### Set Expertise
+
+Set your expertise level:
+
+```bash
+SourceSailor setExpertise
+```
+
+This command will prompt you to select your expertise level, programming languages, and frameworks you are proficient in. The information will be stored in the configuration file.
+
+Aliases:
+- `SourceSailor expertise`
+- `SourceSailor profile`
+
+#### Get Expertise
+
+Retrieve and display your current expertise level:
+
+```bash
+SourceSailor getExpertise
+```
+
+This command will display your current expertise level, programming languages, and frameworks stored in the configuration file.
+
+Aliases:
+- `SourceSailor expertise`
+- `SourceSailor profile`
+
 Use the `SourceSailor --help` command to see the full list of available commands and options.
 
 

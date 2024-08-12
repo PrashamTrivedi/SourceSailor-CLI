@@ -6,12 +6,16 @@ import * as openai from '../openai.mjs'
 import * as utils from '../utils.mjs'
 import fs from 'fs'
 import ora from 'ora'
+import inquirer from 'inquirer'
+import * as getExpertise from '../commands/getExpertise.mts'
 
 vi.mock('../directoryProcessor.mjs')
 vi.mock('../openai.mjs')
 vi.mock('../utils.mjs')
 vi.mock('fs')
 vi.mock('ora')
+vi.mock('inquirer')
+vi.mock('../commands/getExpertise.mts')
 
 describe('analyse command', () => {
   beforeEach(() => {
@@ -165,5 +169,91 @@ describe('analyse command', () => {
       expect.anything()
     )
     expect(utils.writeError).not.toHaveBeenCalled()
+  })
+
+  it('should prompt user to set expertise level if not set', async () => {
+    const mockArgv = {
+      path: '/test/project',
+      verbose: false,
+      openai: true,
+      streaming: false,
+      ignore: [],
+    }
+
+    const mockDirectoryStructure = {
+      name: 'project',
+      children: [
+        {name: 'src', children: []},
+        {name: 'package.json', content: '{}'},
+      ],
+    }
+
+    const mockDirectoryInference = {
+      isMonorepo: false,
+      workflow: 'nodejs',
+      dependenciesFile: 'package.json',
+    }
+
+    vi.mocked(directoryProcessor.getDirStructure).mockResolvedValue(mockDirectoryStructure as any)
+    vi.mocked(openai.default).mockReturnValue({
+      inferProjectDirectory: vi.fn().mockResolvedValue(JSON.stringify(mockDirectoryInference)),
+      inferCode: vi.fn().mockResolvedValue('Mocked code inference'),
+      inferInterestingCode: vi.fn().mockResolvedValue('Mocked interesting code'),
+      inferDependency: vi.fn().mockResolvedValue('Mocked dependency inference'),
+    } as any)
+    vi.mocked(utils.readConfig).mockReturnValue({ANALYSIS_DIR: '/test'} as any)
+    vi.mocked(fs.readFileSync).mockReturnValue('{}')
+    vi.mocked(inquirer.prompt).mockResolvedValue({ setExpertise: true })
+    const getExpertiseHandlerSpy = vi.spyOn(getExpertise, 'handler').mockResolvedValue()
+
+    await handler(mockArgv as any)
+
+    expect(inquirer.prompt).toHaveBeenCalledWith([
+      {
+        type: 'confirm',
+        name: 'setExpertise',
+        message: 'Your expertise level is not set. Would you like to set it now?',
+        default: true,
+      },
+    ])
+    expect(getExpertiseHandlerSpy).toHaveBeenCalled()
+  })
+
+  it('should not prompt user to set expertise level if already set', async () => {
+    const mockArgv = {
+      path: '/test/project',
+      verbose: false,
+      openai: true,
+      streaming: false,
+      ignore: [],
+    }
+
+    const mockDirectoryStructure = {
+      name: 'project',
+      children: [
+        {name: 'src', children: []},
+        {name: 'package.json', content: '{}'},
+      ],
+    }
+
+    const mockDirectoryInference = {
+      isMonorepo: false,
+      workflow: 'nodejs',
+      dependenciesFile: 'package.json',
+    }
+
+    vi.mocked(directoryProcessor.getDirStructure).mockResolvedValue(mockDirectoryStructure as any)
+    vi.mocked(openai.default).mockReturnValue({
+      inferProjectDirectory: vi.fn().mockResolvedValue(JSON.stringify(mockDirectoryInference)),
+      inferCode: vi.fn().mockResolvedValue('Mocked code inference'),
+      inferInterestingCode: vi.fn().mockResolvedValue('Mocked interesting code'),
+      inferDependency: vi.fn().mockResolvedValue('Mocked dependency inference'),
+    } as any)
+    vi.mocked(utils.readConfig).mockReturnValue({ANALYSIS_DIR: '/test', expertise: 'Intermediate'} as any)
+    vi.mocked(fs.readFileSync).mockReturnValue('{}')
+
+    await handler(mockArgv as any)
+
+    expect(inquirer.prompt).not.toHaveBeenCalled()
   })
 })

@@ -9,6 +9,8 @@ import * as ListConfigProcessor from "./commands/listConfig.mjs"
 import * as UpdateConfigProcessor from "./commands/updateConfig.mjs"
 import * as PrepareReportProcessor from "./commands/prepareReport.mjs"
 import * as GetDirStructure from "./commands/getDirStructure.mjs"
+import * as SetExpertiseCommand from "./commands/setExpertise.mts"
+import * as GetExpertiseCommand from "./commands/getExpertise.mts"
 
 const yargsSetup = yargs(hideBin(process.argv))
 // console.log("Hello there")
@@ -27,8 +29,9 @@ yargsSetup.
     .command(UpdateConfigProcessor)
     .command(PrepareReportProcessor)
     .command(GetDirStructure)
+    .command(SetExpertiseCommand)
+    .command(GetExpertiseCommand)
     .help()
     .alias('h', 'help')
     .demandCommand(1)
     .parse()
-
