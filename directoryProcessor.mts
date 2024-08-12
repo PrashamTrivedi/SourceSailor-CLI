@@ -22,7 +22,9 @@ export async function getDirStructure(dirPath: string, otherIgnorePaths: string[
 
         pathsToIgnore.push(...gitIgnore)
     }
-    console.log({otherIgnorePaths})
+    if (verbose) {
+        console.log({otherIgnorePaths})
+    }
     if (otherIgnorePaths.length > 0) {
         pathsToIgnore.push(...otherIgnorePaths)
     }

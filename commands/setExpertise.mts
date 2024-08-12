@@ -2,7 +2,7 @@
 import {readConfig, writeConfig} from '../utils.mjs'
 import chalk from 'chalk'
 import {confirm, select} from '@inquirer/prompts'
-export const command = 'set-expertise'
+export const command = 'setExpertise'
 
 export const describe = 'Set the user expertise level for various programming languages and frameworks'
 
@@ -87,4 +87,4 @@ export async function handler() {
 
 export const usage = '$0 <cmd>'
 
-export const aliases = ['expertise', 'skill-level', 'h', 'help']
+export const aliases = ['expertise', 'skillLevel', 'profile', 'h', 'help']

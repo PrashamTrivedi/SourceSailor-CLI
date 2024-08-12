@@ -13,6 +13,7 @@ import {handler as setExpertiseHandler} from './setExpertise.mjs'
 
 
 
+
 // Export these functions for testing
 export {
     analyseDirectoryStructure,
@@ -78,6 +79,7 @@ export async function handler(argv: Arguments) {
     }
     const config = readConfig()
     const rootDir = config.ANALYSIS_DIR
+    const userExpertise = JSON.stringify(config.userExpertise)
 
     const projectName = argv.path as string
 
@@ -101,7 +103,7 @@ export async function handler(argv: Arguments) {
 
 
     const {directoryInferrence, directoryStructureWithContent} = await analyseDirectoryStructure(path, isVerbose, isRoot,
-        dirToWriteAnalysis, useOpenAi, isProjectRoot, ignore, llmInterface)
+        dirToWriteAnalysis, useOpenAi, isProjectRoot, ignore, llmInterface, userExpertise)
 
     if (isVerbose) {
         console.log({project: argv.path, directoryInferrence})
@@ -113,11 +115,11 @@ export async function handler(argv: Arguments) {
     // console.log(`Analysing ${chalk.redBright(projectName)}'s file structure to getting started.`)
     if (!directoryInferrence.isMonorepo) {
 
-        await inferDependenciesAndWriteAnalysis(sourceCodePath, directoryInferrence, useOpenAi, allowStreaming, isVerbose, dirToWriteAnalysis, isProjectRoot, llmInterface)
+        await inferDependenciesAndWriteAnalysis(sourceCodePath, directoryInferrence, useOpenAi, allowStreaming, isVerbose, dirToWriteAnalysis, isProjectRoot, llmInterface, userExpertise)
         const directoryStructureWithoutLockFile = await getDirectoryWithoutLockfile(directoryInferrence, directoryStructureWithContent, isVerbose)
 
         await analyzeCode(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose,
-            dirToWriteAnalysis, isProjectRoot, llmInterface)
+            dirToWriteAnalysis, isProjectRoot, llmInterface, userExpertise)
     } else {
 
         if (isVerbose) {
@@ -132,14 +134,14 @@ export async function handler(argv: Arguments) {
             try {
 
                 const {directoryInferrence, directoryStructureWithContent} = await analyseDirectoryStructure(sourceCodePath, isVerbose,
-                    false, analysisRootDir, useOpenAi, isProjectRoot, ignore, llmInterface)
+                    false, analysisRootDir, useOpenAi, isProjectRoot, ignore, llmInterface, userExpertise)
 
                 await inferDependenciesAndWriteAnalysis(sourceCodePath, directoryInferrence, useOpenAi, allowStreaming,
-                    isVerbose, analysisRootDir, isProjectRoot, llmInterface)
+                    isVerbose, analysisRootDir, isProjectRoot, llmInterface, userExpertise)
 
                 const directoryStructureWithoutLockFile = await getDirectoryWithoutLockfile(directory, directoryStructureWithContent, isVerbose)
                 await analyzeCode(directoryStructureWithoutLockFile, useOpenAi, allowStreaming, isVerbose, analysisRootDir,
-                    isProjectRoot, llmInterface)
+                    isProjectRoot, llmInterface, userExpertise)
             } catch (error) {
                 const errorAnalysisSkipped = `Error analysing ${directory}: Moving on to next directory...`
                 console.error(errorAnalysisSkipped)
@@ -163,7 +165,7 @@ export async function handler(argv: Arguments) {
 
 async function analyseDirectoryStructure(path: string, isVerbose: boolean | undefined,
     isRoot: boolean, projectName: string, useOpenAi: boolean, isProjectRoot: boolean | undefined,
-    ignore: string[], llm: LlmInterface) {
+    ignore: string[], llm: LlmInterface, userExpertise?: string) {
     const spinner = ora('Analyzing the directory structure...').start()
     const directoryStructureWithContent = await getDirStructure(path, ignore, isVerbose)
 
@@ -190,7 +192,7 @@ async function analyseDirectoryStructure(path: string, isVerbose: boolean | unde
     }
     spinner.text = "Analyzing the project directory for codebase shape..."
 
-    const directoryInferrenceResponse = await llm.inferProjectDirectory(JSON.stringify(directoryStructure), useOpenAi, false, isVerbose)
+    const directoryInferrenceResponse = await llm.inferProjectDirectory(JSON.stringify(directoryStructure), useOpenAi, false, isVerbose, userExpertise)
     const directoryInferrence = JSON.parse(directoryInferrenceResponse ?? "")
 
     if (isVerbose) {
@@ -205,30 +207,30 @@ async function analyseDirectoryStructure(path: string, isVerbose: boolean | unde
 }
 
 async function analyzeCode(directoryStructureWithoutLockFile: FileNode, useOpenAi: boolean, allowStreaming: boolean,
-    isVerbose: boolean, projectName: string, isProjectRoot: boolean, llmInterface: LlmInterface) {
+    isVerbose: boolean, projectName: string, isProjectRoot: boolean, llmInterface: LlmInterface, userExpertise?: string) {
 
     await analyzeAndWriteCodeInference(directoryStructureWithoutLockFile, useOpenAi, allowStreaming,
-        isVerbose, projectName, isProjectRoot, llmInterface)
+        isVerbose, projectName, isProjectRoot, llmInterface, userExpertise)
 }
 
 async function analyzeAndWriteCodeInference(directoryStructureWithoutLockFile: FileNode,
     useOpenAi: boolean, allowStreaming: boolean, isVerbose: boolean,
-    projectName: string, isProjectRoot: boolean, llmInterface: LlmInterface) {
+    projectName: string, isProjectRoot: boolean, llmInterface: LlmInterface, userExpertise?: string) {
     let codeInferrenceResponse: string | undefined = await analyzeCodebase(directoryStructureWithoutLockFile, useOpenAi
-        , allowStreaming, isVerbose, llmInterface)
+        , allowStreaming, isVerbose, llmInterface, userExpertise)
     const interestingCodeResponse: string | undefined = await analyseInterestingCode(directoryStructureWithoutLockFile, useOpenAi,
-        allowStreaming, isVerbose, llmInterface)
+        allowStreaming, isVerbose, llmInterface, userExpertise)
     // Concatenate the code inferrence and interesting code
     codeInferrenceResponse += interestingCodeResponse
     writeAnalysis(projectName, "codeInferrence", codeInferrenceResponse, false, isProjectRoot)
 }
 
 async function analyseInterestingCode(directoryStructureWithoutLockFile: FileNode,
-    useOpenAi: boolean, allowStreaming: boolean, isVerbose: boolean, llmInterface: LlmInterface) {
+    useOpenAi: boolean, allowStreaming: boolean, isVerbose: boolean, llmInterface: LlmInterface, userExpertise?: string) {
     const spinner = ora('Analysing interesting code').start()
     try {
 
-        const interestingCode = await llmInterface.inferInterestingCode(JSON.stringify(directoryStructureWithoutLockFile), useOpenAi, allowStreaming, isVerbose)
+        const interestingCode = await llmInterface.inferInterestingCode(JSON.stringify(directoryStructureWithoutLockFile), useOpenAi, allowStreaming, isVerbose, userExpertise)
         let interestingCodeResponse = ""
         if (allowStreaming) {
             spinner.stop().clear()
@@ -254,10 +256,10 @@ async function analyseInterestingCode(directoryStructureWithoutLockFile: FileNod
 }
 
 async function analyzeCodebase(directoryStructureWithoutLockFile: FileNode, useOpenAi: boolean,
-    allowStreaming: boolean, isVerbose: boolean, llmInterface: LlmInterface) {
+    allowStreaming: boolean, isVerbose: boolean, llmInterface: LlmInterface, userExpertise?: string) {
     const spinner = ora('Reading Codebase and inferring code...').start()
     try {
-        const codeInferrence = await llmInterface.inferCode(JSON.stringify(directoryStructureWithoutLockFile), useOpenAi, allowStreaming, isVerbose)
+        const codeInferrence = await llmInterface.inferCode(JSON.stringify(directoryStructureWithoutLockFile), useOpenAi, allowStreaming, isVerbose, userExpertise)
         let codeInferrenceResponse = ""
         if (allowStreaming) {
             spinner.stop().clear()
@@ -287,7 +289,7 @@ async function analyzeCodebase(directoryStructureWithoutLockFile: FileNode, useO
 
 async function inferDependenciesAndWriteAnalysis(sourceCodePath: string, directoryInferrence: any,
     useOpenAi: boolean, allowStreaming: boolean, isVerbose: boolean,
-    projectName: string, isProjectRoot: boolean, llmInterface: LlmInterface) {
+    projectName: string, isProjectRoot: boolean, llmInterface: LlmInterface, userExpertise?: string) {
     const spinner = ora('Inferring dependencies...').start()
     if (isVerbose) {
         console.log({sourceCodePath, projectName, directoryInferrence})
@@ -297,7 +299,7 @@ async function inferDependenciesAndWriteAnalysis(sourceCodePath: string, directo
         return
     }
     const depenencyFile = fs.readFileSync(`${sourceCodePath}/${directoryInferrence.dependenciesFile}`, 'utf-8')
-    const dependencyInferrence = await llmInterface.inferDependency(depenencyFile, directoryInferrence.workflow, useOpenAi, allowStreaming, isVerbose)
+    const dependencyInferrence = await llmInterface.inferDependency(depenencyFile, directoryInferrence.workflow, useOpenAi, allowStreaming, isVerbose, userExpertise)
 
     let dependencyInferrenceResponse = ""
     if (allowStreaming) {
