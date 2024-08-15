@@ -141,7 +141,7 @@ The SourceSailor-CLI tool is structured around several key components, each serv
 
 - **Commands Directory**: Contains various CLI commands like `analyse.mjs`, `listConfig.mjs`, and more, which implement the tool's functionality.
 - **OpenAI Integration**: The `openai.mjs` module interfaces with the OpenAI API, enabling the tool to perform advanced code analysis.
-- ❌ :brain: **Tree-Sitter Parsing**: Utilizes Tree-Sitter grammars in `treeParser.mjs` and `treeSitterFromFieNames.mjs` for accurate code parsing across different languages.
+- ❌ :brain: **Tree-Sitter Parsing**: Utilizes Tree-Sitter grammars in `treeParser.mjs` and `treeSitterFromFieNames.mjs` for accurate code parsing across different languages. (Removed from the core functionality,See [#9](https://github.com/PrashamTrivedi/SourceSailor-CLI/issues/9))
 - **Dynamic Command Handling**: Employs Yargs for building a flexible CLI interface, making it user-friendly and adaptable to various user needs.
 - **Configurable Analysis Directory**: Allows users to specify directories for storing analysis results, adding a layer of customization.
 - **User Expertise Levels**: The `expertise.mjs` module manages user expertise levels for different programming languages and frameworks, enhancing the tool's analysis capabilities.
