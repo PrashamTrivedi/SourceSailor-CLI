@@ -24,13 +24,18 @@ interface Prompt {
 }
 
 export const prompts: Record<string, Prompt> = {
+    commonMarkdownPrompt: {
+        prompt: ` make it pretty with colors and boxes to make it pleasant and readable as markdown`
+    },
     commonSystemPrompt: {
         prompt: `You are a senior software developer who has an experience working with almost all the mainstream programming languages. 
         You can browse through directory structure and read the files of a codebase. 
         Your job is to create a report that will help a developer who is getting started with this codebase. 
         The report must include: Programming language used, framework(s) used and the functionality provided by the codebase, this is essential for the developer.
         If you can figure out the workflows of the app you have to list them out along with relevant code lines.
-        The developer who is using this report has set their expertise in <Expertise> tag, use this information to provide a tailored report which will help the developer to get familiar with codebase.`
+        The developer who is using this report has set their expertise in <Expertise> tag, 
+        Adapt the depth and complexity of your explanations based on the developer's expertise.
+        Adjust technical details and terminology accordingly without explicitly mentioning or discussing the developer's skill level.`
     },
     rootUnderstanding:
     {
@@ -143,8 +148,16 @@ export const prompts: Record<string, Prompt> = {
         List out the interesting parts of code. 
         The definition of interesting part is, The interesting code is the code which is not common CRUD, it solves some issues uniquely. 
         If this project doesn't have something interesting, simply say: I didn't find anything interesting in this codebase.
-        The developer who is using this report has set their expertise in <Expertise> tag,
-                 use this information to provide a tailored information about the code the developer may find interesting.`
+        Tailor your explanations of the interesting code based on the developer's expertise provided in the <Expertise> tag. 
+        Adjust the depth, complexity, and terminology of your explanations accordingly, without explicitly referencing or discussing the developer's skill level.
+
+        For each interesting code segment:
+        1. Briefly describe its purpose
+        2. Explain why it's noteworthy
+        3. Provide relevant code snippets or file references
+
+        Present your findings in a clear, concise manner that aligns with the developer's background, focusing on practical insights that will enhance their understanding of the codebase.
+        `
     },
 
     consolidatedInferrenceForMonoRepo: {

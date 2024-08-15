@@ -41,6 +41,8 @@ export class OpenAIInferrence implements LlmInterface {
         {name: 'gpt-4-turbo', limit: 128000},
         {name: 'gpt-4o', limit: 128000},
         {name: 'gpt-4o-mini', limit: 128000},
+        {name: 'chatgpt-4o-latest', limit: 128000},
+        {name: 'gpt-4o-2024-08-06', limit: 128000},
         {name: 'gpt-4-1106-preview', limit: 128000},
         {name: 'gpt-4-turbo-preview', limit: 128000},
         {name: 'gpt-3.5-turbo', limit: 4000},
@@ -55,9 +57,9 @@ export class OpenAIInferrence implements LlmInterface {
     }
 
     private createPrompt(systemPrompt: string, userPrompt: string, isVerbose: boolean, userExpertise?: string): ChatCompletionMessageParam[] {
-        let finalSystemPrompt = systemPrompt;
+        let finalSystemPrompt = systemPrompt
         if (userExpertise) {
-            finalSystemPrompt += `\n<Expertise>${JSON.stringify(userExpertise)}</Expertise>`;
+            finalSystemPrompt += `\n<Expertise>${JSON.stringify(userExpertise)}</Expertise>`
         }
         const compatibilityMessage: ChatCompletionMessageParam[] = [{
             role: "system",
@@ -211,7 +213,7 @@ export class OpenAIInferrence implements LlmInterface {
         const model = await this.getModel(useOpenAi)
         const compatibilityMessage = this.createPrompt(
             `${prompts.commonSystemPrompt.prompt}\n${prompts.dependencyUnderstanding.prompt}`,
-            `<DependencyFile>${JSON.stringify(dependencyFile)}</DependencyFile>\n<Workflow>${workflow}</Workflow>`,
+            `<DependencyFile>${JSON.stringify(dependencyFile)}</DependencyFile>\n<Workflow>${workflow}</Workflow> ${prompts.commonMarkdownPrompt.prompt}`,
             isVerbose,
             userExpertise
         )
@@ -233,7 +235,7 @@ export class OpenAIInferrence implements LlmInterface {
         const model = await this.getModel(useOpenAi)
         const compatibilityMessage = this.createPrompt(
             `${prompts.commonSystemPrompt.prompt}\n${prompts.codeUnderstanding.prompt}`,
-            `<Code>${JSON.stringify(code)}</Code>`,
+            `<Code>${JSON.stringify(code)}</Code> ${prompts.commonMarkdownPrompt.prompt}`,
             isVerbose,
             userExpertise
         )
@@ -254,7 +256,7 @@ export class OpenAIInferrence implements LlmInterface {
         const model = await this.getModel(useOpenAi)
         const compatibilityMessage = this.createPrompt(
             prompts.interestingCodeParts.prompt,
-            `<Code>${JSON.stringify(code)}</Code>`,
+            `<Code>${JSON.stringify(code)}</Code>  ${prompts.commonMarkdownPrompt.prompt}`,
             isVerbose,
             userExpertise
         )
@@ -276,7 +278,7 @@ export class OpenAIInferrence implements LlmInterface {
         const model = await this.getModel(useOpenAi)
         const compatibilityMessage = this.createPrompt(
             prompts.readmePrompt.prompt,
-            `<DirectoryStructure>${JSON.stringify(directoryStructure)}</DirectoryStructure>\n<DependencyInferrence>${JSON.stringify(dependencyInference)}</DependencyInferrence>\n<CodeInferrence>${JSON.stringify(codeInference)}</CodeInferrence>`,
+            `<DirectoryStructure>${JSON.stringify(directoryStructure)}</DirectoryStructure>\n<DependencyInferrence>${JSON.stringify(dependencyInference)}</DependencyInferrence>\n<CodeInferrence>${JSON.stringify(codeInference)}</CodeInferrence>  ${prompts.commonMarkdownPrompt.prompt}`,
             isVerbose,
             userExpertise
         )
@@ -297,7 +299,7 @@ export class OpenAIInferrence implements LlmInterface {
         const model = await this.getModel(useOpenAi)
         const compatibilityMessage = this.createPrompt(
             prompts.consolidatedInferrenceForMonoRepo.prompt,
-            `<MonoRepoInferrence>${JSON.stringify(monorepoInferrenceInfo)}</MonoRepoInferrence>`,
+            `<MonoRepoInferrence>${JSON.stringify(monorepoInferrenceInfo)}</MonoRepoInferrence>  ${prompts.commonMarkdownPrompt.prompt}`,
             isVerbose,
             userExpertise
         )
