@@ -17,7 +17,7 @@ interface Choice {
   name: string, value: string, description: string
 }
 
-const languages: Language[] = [
+const languagesAndPlatforms: Language[] = [
   {name: 'JavaScript', frameworks: ['React', 'Angular', 'Vue.js', 'Express', 'Node.js']},
   {name: 'Python', frameworks: ['Django', 'Flask', 'FastAPI', 'Pyramid']},
   {name: 'Java', frameworks: ['Spring', 'Hibernate', 'Struts', 'JavaServer Faces']},
@@ -27,7 +27,14 @@ const languages: Language[] = [
   {name: 'Go', frameworks: ['Gin', 'Echo', 'Beego', 'Revel']},
   {name: 'Rust', frameworks: ['Rocket', 'Actix', 'Warp', 'Tide']},
   {name: 'TypeScript', frameworks: ['NestJS', 'Deno', 'Angular', 'Next.js']},
-  {name: 'Swift', frameworks: ['SwiftUI', 'Vapor', 'Perfect', 'Kitura']}
+  {name: 'Swift', frameworks: ['SwiftUI', 'Vapor', 'Perfect', 'Kitura']},
+  {name: 'Cloud', frameworks: ['AWS', 'Azure', 'Google Cloud', 'IBM Cloud','Serverless']},
+  {name: 'Databases', frameworks: ['SQL', 'NoSQL', 'NewSQL', 'Graph Databases']},
+  {name: 'DevOps', frameworks: ['Docker', 'Kubernetes', 'Jenkins', 'GitHub Actions']},
+  {name: 'Testing', frameworks: ['Jest', 'Mocha', 'Cypress', 'Selenium']},
+  {name: 'Mobile', frameworks: ['React Native', 'Flutter', 'Xamarin', 'NativeScript']},
+  {name: 'Web', frameworks: ['HTML', 'CSS', 'JavaScript', 'WebAssembly']},
+
 ]
 
 const expertiseLevels: Choice[] = [
@@ -44,7 +51,7 @@ export async function handler() {
     console.log(chalk.blue('Welcome to the expertise assessment questionnaire!'))
     console.log(chalk.yellow('Please answer the following questions about your programming expertise.'))
 
-    for (const lang of languages) {
+    for (const lang of languagesAndPlatforms) {
       const knowsLanguage = await confirm({
         message: `Do you have experience with ${lang.name}?`,
         default: false
