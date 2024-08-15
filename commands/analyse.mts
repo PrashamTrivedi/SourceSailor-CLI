@@ -10,7 +10,8 @@ import {Stream} from "openai/streaming.mjs"
 import chalk from "chalk"
 import {confirm} from '@inquirer/prompts'
 import {handler as setExpertiseHandler} from './setExpertise.mjs'
-
+import {markdownToTerminal} from "../terminalRenderrer.mjs"
+import {Argv} from 'yargs'
 
 
 
@@ -28,7 +29,6 @@ export const command = 'analyse <path|p> [verbose|v] [openai|o] [streaming|s] [i
 
 export const describe = 'Analyse the given directory structure to understand the project structure and dependencies'
 
-import {Argv} from 'yargs'
 
 export function builder(yargs: Argv) {
 
@@ -77,6 +77,7 @@ export async function handler(argv: Arguments) {
     if (isVerbose) {
         console.log(`Analyse the given directory structure to understand the project structure and dependencies: ${argv.path}`)
     }
+
     const config = readConfig()
     const rootDir = config.ANALYSIS_DIR
     const userExpertise = JSON.stringify(config.userExpertise)
@@ -242,13 +243,17 @@ async function analyseInterestingCode(directoryStructureWithoutLockFile: FileNod
             spinner.stop().clear()
             for await (const chunk of interestingCode as Stream<ChatCompletionChunk>) {
                 const message = chunk.choices[0]?.delta.content || ""
+
                 process.stdout.write(message)
                 interestingCodeResponse += message
+
             }
             process.stdout.write("\n")
         } else {
             const interestingCodeAsString = interestingCode as string
-            spinner.stopAndPersist({symbol: '✔️', text: interestingCodeAsString})
+            const markDownMessage = markdownToTerminal(interestingCodeAsString)
+
+            spinner.stopAndPersist({symbol: '✔️', text: markDownMessage})
 
             interestingCodeResponse = interestingCodeAsString
         }
@@ -277,7 +282,8 @@ async function analyzeCodebase(directoryStructureWithoutLockFile: FileNode, useO
             process.stdout.write("\n")
         } else {
             const codeInferrenceAsString = codeInferrence as string
-            spinner.stopAndPersist({symbol: '✔️', text: codeInferrenceAsString})
+            const markDownMessage = markdownToTerminal(codeInferrenceAsString)
+            spinner.stopAndPersist({symbol: '✔️', text: markDownMessage})
             codeInferrenceResponse = codeInferrenceAsString
         }
         return codeInferrenceResponse
@@ -302,29 +308,36 @@ async function inferDependenciesAndWriteAnalysis(sourceCodePath: string, directo
     }
 
     if (!directoryInferrence.dependenciesFile || directoryInferrence.dependenciesFile.trim() === '') {
+        spinner.stopAndPersist({symbol: '❌', text: 'No dependencies file'})
         return
     }
     const depenencyFile = fs.readFileSync(`${sourceCodePath}/${directoryInferrence.dependenciesFile}`, 'utf-8')
-    const dependencyInferrence = await llmInterface.inferDependency(depenencyFile, directoryInferrence.workflow, useOpenAi, allowStreaming, isVerbose, userExpertise)
+    try {
+        const dependencyInferrence = await llmInterface.inferDependency(depenencyFile, directoryInferrence.workflow, useOpenAi, allowStreaming, isVerbose, userExpertise)
 
-    let dependencyInferrenceResponse = ""
-    if (allowStreaming) {
-        spinner.stop().clear()
-        for await (const chunk of dependencyInferrence as Stream<ChatCompletionChunk>) {
-            const message = chunk.choices[0]?.delta.content || ""
-            process.stdout.write(message)
-            dependencyInferrenceResponse += message
+        let dependencyInferrenceResponse = ""
+        if (allowStreaming) {
+            spinner.stop().clear()
+            for await (const chunk of dependencyInferrence as Stream<ChatCompletionChunk>) {
+                const message = chunk.choices[0]?.delta.content || ""
+                process.stdout.write(message)
+                dependencyInferrenceResponse += message
+            }
+
+            process.stdout.write("\n")
+
+        } else {
+            const dependencyInferrenceAsString = dependencyInferrence as string
+            const markDownMessage = markdownToTerminal(dependencyInferrenceAsString)
+            spinner.stopAndPersist({symbol: '✔️', text: markDownMessage})
+
+            dependencyInferrenceResponse = dependencyInferrenceAsString
         }
-
-        process.stdout.write("\n")
-
-    } else {
-        const dependencyInferrenceAsString = dependencyInferrence as string
-        spinner.stopAndPersist({symbol: '✔️', text: dependencyInferrenceAsString})
-
-        dependencyInferrenceResponse = dependencyInferrenceAsString
+        writeAnalysis(projectName, "dependencyInferrence", dependencyInferrenceResponse, isProjectRoot)
+    } catch (error) {
+        spinner.stopAndPersist({symbol: '❌', text: 'Error inferring dependencies'})
+        console.error(error)
     }
-    writeAnalysis(projectName, "dependencyInferrence", dependencyInferrenceResponse, isProjectRoot)
 }
 
 async function getDirectoryWithoutLockfile(directoryInferrence: any, directoryStructureWithContent: FileNode | undefined, isVerbose: boolean) {
