@@ -6,32 +6,20 @@ import {readConfig} from "./utils.mjs"
 import {ChatCompletion} from "openai/resources/index.mjs"
 import {ChatCompletionChunk} from "openai/src/resources/index.js"
 import {ChatCompletionCreateParamsBase, ChatCompletionMessageParam, ChatCompletionTool} from "openai/resources/chat/completions.mjs"
+import {LlmInterface} from "./llmInterface.mjs"
 
 interface ModelLimit {
     name: string
     limit: number
-    
-}
-interface Function {
-    name: string
-    parameters: Record<string, any>
-    description: string
+
 }
 
-interface Tool {
-    type: string
-    function: Function
-}
+// interface Tool {
+//     type: string
+//     function: Function
+// }
 
-export interface LlmInterface {
-    inferProjectDirectory(projectDirectory: string, useOpenAi?: boolean, isStreaming?: boolean, isVerbose?: boolean, userExpertise?: string): Promise<string | undefined>
-    inferDependency(dependencyFile: string, workflow: string, useOpenAi?: boolean, isStreaming?: boolean, isVerbose?: boolean, userExpertise?: string): Promise<string | undefined | Stream<ChatCompletionChunk>>
-    inferCode(code: string, useOpenAi?: boolean, isStreaming?: boolean, isVerbose?: boolean, userExpertise?: string): Promise<string | undefined | Stream<ChatCompletionChunk>>
-    inferInterestingCode(code: string, useOpenAi?: boolean, isStreaming?: boolean, isVerbose?: boolean, userExpertise?: string): Promise<string | undefined | Stream<ChatCompletionChunk>>
-    generateReadme(directoryStructure: string, dependencyInference: string, codeInference: string, useOpenAi?: boolean, isStreaming?: boolean, isVerbose?: boolean, userExpertise?: string): Promise<string | undefined | Stream<ChatCompletionChunk>>
-    generateMonorepoReadme(monorepoInferrenceInfo: string, useOpenAi?: boolean, isStreaming?: boolean, isVerbose?: boolean, userExpertise?: string): Promise<string | undefined | Stream<ChatCompletionChunk>>
-    listModels(isVerbose?: boolean): Promise<string[]>
-}
+
 
 export class OpenAIInferrence implements LlmInterface {
     private modelLimits: ModelLimit[] = [
@@ -135,45 +123,33 @@ export class OpenAIInferrence implements LlmInterface {
         }
     }
 
-    private async getModel(useOpenAi: boolean): Promise<string> {
-        const openai = this.getOpenAiClient(useOpenAi)
+    private async getModel(): Promise<string> {
+        const openai = this.getOpenAiClient()
         const config = readConfig()
 
-        if (useOpenAi) {
-            const models = await openai.models.list()
-            const gpt4 = models.data.find(model => model.id === config.DEFAULT_OPENAI_MODEL ?? process.env.DEFAULT_OPENAI_MODEL ?? 'gpt-4-preview')
-            if (gpt4) {
-                return gpt4.id
-            } else {
-                return models.data.find(model => model.id === 'gpt-3.5-turbo')?.id ?? 'gpt-3.5-turbo'
-            }
+        const models = await openai.models.list()
+        const gpt4 = models.data.find(model => model.id === config.DEFAULT_OPENAI_MODEL ?? process.env.DEFAULT_OPENAI_MODEL ?? 'gpt-4-preview')
+        if (gpt4) {
+            return gpt4.id
         } else {
-            return Promise.resolve(process.env.OPTIONAL_MODEL ?? "meta-llama/llama-2-13b-chat")
+            return models.data.find(model => model.id === 'gpt-3.5-turbo')?.id ?? 'gpt-3.5-turbo'
         }
     }
 
-    private getOpenAiClient(useOpenAi: boolean): OpenAI {
+    private getOpenAiClient(): OpenAI {
         const config = readConfig()
 
-        if (!useOpenAi) {
-            return new OpenAI({
-                apiKey: process.env.OPENROUTER_API_KEY,
-                baseURL: process.env.OPENROUTER_API_URL,
-                timeout: 60000,
-            })
-        }
         return new OpenAI({apiKey: config.OPENAI_API_KEY || process.env.OPENAI_API_KEY, timeout: 60000})
     }
 
     public async inferProjectDirectory(
         projectDirectory: string,
-        useOpenAi: boolean = true,
         isStreaming: boolean = false,
         isVerbose: boolean = false,
         userExpertise?: string
     ): Promise<string | undefined> {
-        const openai = this.getOpenAiClient(useOpenAi)
-        const model = await this.getModel(useOpenAi)
+        const openai = this.getOpenAiClient()
+        const model = await this.getModel()
 
         const compatibilityMessage = this.createPrompt(
             `${prompts.commonSystemPrompt.prompt}\n${prompts.rootUnderstanding.prompt}`,
@@ -203,14 +179,13 @@ export class OpenAIInferrence implements LlmInterface {
     public async inferDependency(
         dependencyFile: string,
         workflow: string,
-        useOpenAi: boolean = true,
         isStreaming: boolean = false,
         isVerbose: boolean = false,
         userExpertise?: string
     ): Promise<string | undefined | Stream<ChatCompletionChunk>> {
         // @ts-expect-error Exclude streaming from coverage
-        const openai = this.getOpenAiClient(useOpenAi, isVerbose)
-        const model = await this.getModel(useOpenAi)
+        const openai = this.getOpenAiClient(isVerbose)
+        const model = await this.getModel()
         const compatibilityMessage = this.createPrompt(
             `${prompts.commonSystemPrompt.prompt}\n${prompts.dependencyUnderstanding.prompt}`,
             `<DependencyFile>${JSON.stringify(dependencyFile)}</DependencyFile>\n<Workflow>${workflow}</Workflow> ${prompts.commonMarkdownPrompt.prompt}`,
@@ -225,14 +200,13 @@ export class OpenAIInferrence implements LlmInterface {
 
     public async inferCode(
         code: string,
-        useOpenAi: boolean = true,
         isStreaming: boolean = false,
         isVerbose: boolean = false,
         userExpertise?: string
     ): Promise<string | undefined | Stream<ChatCompletionChunk>> {
         // @ts-expect-error Exclude streaming from coverage
-        const openai = this.getOpenAiClient(useOpenAi, isVerbose)
-        const model = await this.getModel(useOpenAi)
+        const openai = this.getOpenAiClient(isVerbose)
+        const model = await this.getModel()
         const compatibilityMessage = this.createPrompt(
             `${prompts.commonSystemPrompt.prompt}\n${prompts.codeUnderstanding.prompt}`,
             `<Code>${JSON.stringify(code)}</Code> ${prompts.commonMarkdownPrompt.prompt}`,
@@ -246,14 +220,13 @@ export class OpenAIInferrence implements LlmInterface {
 
     public async inferInterestingCode(
         code: string,
-        useOpenAi: boolean = true,
         isStreaming: boolean = false,
         isVerbose: boolean = false,
         userExpertise?: string
     ): Promise<string | undefined | Stream<ChatCompletionChunk>> {
         // @ts-expect-error Exclude streaming from coverage
-        const openai = this.getOpenAiClient(useOpenAi, isVerbose)
-        const model = await this.getModel(useOpenAi)
+        const openai = this.getOpenAiClient(isVerbose)
+        const model = await this.getModel()
         const compatibilityMessage = this.createPrompt(
             prompts.interestingCodeParts.prompt,
             `<Code>${JSON.stringify(code)}</Code>  ${prompts.commonMarkdownPrompt.prompt}`,
@@ -268,14 +241,13 @@ export class OpenAIInferrence implements LlmInterface {
         directoryStructure: string,
         dependencyInference: string,
         codeInference: string,
-        useOpenAi: boolean = true,
         isStreaming: boolean = false,
         isVerbose: boolean = false,
         userExpertise?: string
     ): Promise<string | undefined | Stream<ChatCompletionChunk>> {
         // @ts-expect-error Exclude streaming from coverage
-        const openai = this.getOpenAiClient(useOpenAi, isVerbose)
-        const model = await this.getModel(useOpenAi)
+        const openai = this.getOpenAiClient(isVerbose)
+        const model = await this.getModel()
         const compatibilityMessage = this.createPrompt(
             prompts.readmePrompt.prompt,
             `<DirectoryStructure>${JSON.stringify(directoryStructure)}</DirectoryStructure>\n<DependencyInferrence>${JSON.stringify(dependencyInference)}</DependencyInferrence>\n<CodeInferrence>${JSON.stringify(codeInference)}</CodeInferrence>  ${prompts.commonMarkdownPrompt.prompt}`,
@@ -289,14 +261,13 @@ export class OpenAIInferrence implements LlmInterface {
 
     public async generateMonorepoReadme(
         monorepoInferrenceInfo: string,
-        useOpenAi: boolean = true,
         isStreaming: boolean = false,
         isVerbose: boolean = false,
         userExpertise?: string
     ): Promise<string | undefined | Stream<ChatCompletionChunk>> {
         // @ts-expect-error Exclude streaming from coverage
-        const openai = this.getOpenAiClient(useOpenAi, isVerbose)
-        const model = await this.getModel(useOpenAi)
+        const openai = this.getOpenAiClient(isVerbose)
+        const model = await this.getModel()
         const compatibilityMessage = this.createPrompt(
             prompts.consolidatedInferrenceForMonoRepo.prompt,
             `<MonoRepoInferrence>${JSON.stringify(monorepoInferrenceInfo)}</MonoRepoInferrence>  ${prompts.commonMarkdownPrompt.prompt}`,
@@ -309,7 +280,7 @@ export class OpenAIInferrence implements LlmInterface {
     }
 
     public async listModels(isVerbose: boolean = false): Promise<string[]> {
-        const openai = this.getOpenAiClient(true)
+        const openai = this.getOpenAiClient()
         const models = await openai.models.list()
 
         if (isVerbose) {

@@ -31,7 +31,9 @@
   "author": "Prasham H Trivedi<contact@prashamhtrivedi.in>",
   "license": "ISC",
   "dependencies": {
+    "@google/generative-ai": "^0.17.0",
     "@inquirer/prompts": "^5.3.8",
+    "axios": "^1.7.4",
     "chalk": "^5.3.0",
     "cli-markdown": "^3.4.0",
     "ignore": "^5.3.1",

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest'
 import OpenAI from 'openai'
 import OpenAIInferrence from "../openai.mjs"
@@ -78,7 +79,7 @@ describe('OpenAIInferrence', () => {
             mockOpenAI.chat.completions.create.mockResolvedValue(mockResponse)
             mockOpenAI.models.list.mockResolvedValue({data: [{id: 'gpt-4'}]})
 
-            const result = await openAIInferrence.inferProjectDirectory('{"src": {}, "package.json": {}}', true, false, false)
+            const result = await openAIInferrence.inferProjectDirectory('{"src": {}, "package.json": {}}', false, false)
             expect(result).toBe('{"projectType":"nodejs","mainLanguage":"typescript"}')
         })
 
@@ -95,7 +96,7 @@ describe('OpenAIInferrence', () => {
             mockOpenAI.chat.completions.create.mockResolvedValue(mockResponse)
             mockOpenAI.models.list.mockResolvedValue({data: [{id: 'gpt-4'}]})
 
-            const result = await openAIInferrence.inferProjectDirectory('{"src": {}, "requirements.txt": {}}', true, false, false)
+            const result = await openAIInferrence.inferProjectDirectory('{"src": {}, "requirements.txt": {}}', false, false)
             expect(result).toBe('{"projectType":"python","mainLanguage":"python"}')
         })
 
@@ -112,7 +113,7 @@ describe('OpenAIInferrence', () => {
             mockOpenAI.chat.completions.create.mockResolvedValue(mockResponse)
             mockOpenAI.models.list.mockResolvedValue({data: [{id: 'gpt-4'}]})
 
-            const result = await openAIInferrence.inferProjectDirectory('{}', true, false, false)
+            const result = await openAIInferrence.inferProjectDirectory('{}', false, false)
             expect(result).toBeUndefined()
         })
 
@@ -122,13 +123,13 @@ describe('OpenAIInferrence', () => {
             mockOpenAI.models.list.mockResolvedValue({data: [{id: 'gpt-3.5-turbo'}]})
             const longDirectory = JSON.stringify({...Array(5000).fill('longfile.js')})
 
-            await expect(openAIInferrence.inferProjectDirectory(longDirectory, true, false, false)).rejects.toThrow('Prompt is Too Long')
+            await expect(openAIInferrence.inferProjectDirectory(longDirectory, false, false)).rejects.toThrow('Prompt is Too Long')
         })
 
 
         it('should handle invalid JSON input', async () => {
             mockOpenAI.models.list.mockResolvedValue({data: [{id: 'gpt-4'}]})
-            await expect(openAIInferrence.inferProjectDirectory('invalid json', true, false, false)).rejects.toThrow()
+            await expect(openAIInferrence.inferProjectDirectory('invalid json', false, false)).rejects.toThrow()
         })
 
         it('should use a non-default model when specified', async () => {
@@ -139,7 +140,7 @@ describe('OpenAIInferrence', () => {
             mockOpenAI.models.list.mockResolvedValue({data: [{id: 'gpt-3.5-turbo'}]})
 
             process.env.DEFAULT_OPENAI_MODEL = 'gpt-3.5-turbo'
-            await openAIInferrence.inferProjectDirectory('{"src": {}}', true, false, false)
+            await openAIInferrence.inferProjectDirectory('{"src": {}}', false, false)
             expect(mockOpenAI.chat.completions.create).toHaveBeenCalledWith(expect.objectContaining({model: 'gpt-3.5-turbo'}))
             delete process.env.DEFAULT_OPENAI_MODEL
         })
@@ -153,7 +154,8 @@ describe('OpenAIInferrence', () => {
             mockOpenAI.chat.completions.create.mockResolvedValue(mockResponse)
             mockOpenAI.models.list.mockResolvedValue({data: [{id: 'gpt-4'}]})
 
-            const result = await openAIInferrence.inferDependency('{"dependencies": {"react": "^17.0.2"}}', 'build', true, false, false)
+            const result = await openAIInferrence.inferDependency('{"dependencies": {"react": "^17.0.2"}}', 'build',
+                false, false)
             expect(result).toBe('Dependency inference')
         })
 
@@ -173,13 +175,13 @@ describe('OpenAIInferrence', () => {
             mockOpenAI.chat.completions.create.mockResolvedValue(mockResponse)
             mockOpenAI.models.list.mockResolvedValue({data: [{id: 'gpt-4'}]})
 
-            const result = await openAIInferrence.inferDependency('{}', 'build', true, false, false)
+            const result = await openAIInferrence.inferDependency('{}', 'build', false, false)
             expect(result).toBe('No dependencies found')
         })
 
         it('should handle invalid workflow input', async () => {
             mockOpenAI.models.list.mockResolvedValue({data: [{id: 'gpt-4'}]})
-            await expect(openAIInferrence.inferDependency('{"dependencies": {}}', '', true, false, false)).rejects.toThrow()
+            await expect(openAIInferrence.inferDependency('{"dependencies": {}}', '', false, false)).rejects.toThrow()
         })
     })
 
@@ -191,7 +193,7 @@ describe('OpenAIInferrence', () => {
             mockOpenAI.chat.completions.create.mockResolvedValue(mockResponse)
             mockOpenAI.models.list.mockResolvedValue({data: [{id: 'gpt-4'}]})
 
-            const result = await openAIInferrence.inferCode('function hello() { console.log("Hello"); }', true, false, false)
+            const result = await openAIInferrence.inferCode('function hello() { console.log("Hello"); }', false, false)
             expect(result).toBe('Code inference')
         })
 
@@ -212,14 +214,14 @@ describe('OpenAIInferrence', () => {
             mockOpenAI.chat.completions.create.mockResolvedValue(mockResponse)
             mockOpenAI.models.list.mockResolvedValue({data: [{id: 'gpt-4'}]})
 
-            const result = await openAIInferrence.inferCode('', true, false, false)
+            const result = await openAIInferrence.inferCode('', false, false)
             expect(result).toBe('No code provided')
         })
 
         it('should handle very large code input', async () => {
             const largeCode = 'x'.repeat(100000) // Adjust size as needed
             mockOpenAI.models.list.mockResolvedValue({data: [{id: 'gpt-4'}]})
-            await expect(openAIInferrence.inferCode(largeCode, true, false, false)).rejects.toThrow('Prompt is Too Long')
+            await expect(openAIInferrence.inferCode(largeCode, false, false)).rejects.toThrow('Prompt is Too Long')
         })
     })
 
@@ -231,7 +233,7 @@ describe('OpenAIInferrence', () => {
             mockOpenAI.chat.completions.create.mockResolvedValue(mockResponse)
             mockOpenAI.models.list.mockResolvedValue({data: [{id: 'gpt-4'}]})
 
-            const result = await openAIInferrence.inferInterestingCode('function complexAlgorithm() { /* ... */ }', true, false, false)
+            const result = await openAIInferrence.inferInterestingCode('function complexAlgorithm() { /* ... */ }', false, false)
             expect(result).toBe('Interesting code parts')
         })
 
@@ -251,7 +253,7 @@ describe('OpenAIInferrence', () => {
             mockOpenAI.chat.completions.create.mockResolvedValue(mockResponse)
             mockOpenAI.models.list.mockResolvedValue({data: [{id: 'gpt-4'}]})
 
-            const result = await openAIInferrence.inferInterestingCode('console.log("Hello, World!");', true, false, false)
+            const result = await openAIInferrence.inferInterestingCode('console.log("Hello, World!");', false, false)
             expect(result).toBe('No particularly interesting code parts found')
         })
 
@@ -269,7 +271,7 @@ describe('OpenAIInferrence', () => {
                     }
                 }
             `
-            const result = await openAIInferrence.inferInterestingCode(javaCode, true, false, false)
+            const result = await openAIInferrence.inferInterestingCode(javaCode, false, false)
             expect(result).toBe('Interesting Java code parts')
         })
     })
@@ -286,7 +288,6 @@ describe('OpenAIInferrence', () => {
                 '{"src": {}, "package.json": {}}',
                 '{"dependencies": {"react": "^17.0.2"}}',
                 'function App() { return <div>Hello</div>; }',
-                true,
                 false,
                 false
             )
@@ -300,14 +301,14 @@ describe('OpenAIInferrence', () => {
             mockOpenAI.chat.completions.create.mockResolvedValue(mockResponse)
             mockOpenAI.models.list.mockResolvedValue({data: [{id: 'gpt-4'}]})
 
-            const result = await openAIInferrence.generateReadme('{}', '{}', '{}', true, false, false)
+            const result = await openAIInferrence.generateReadme('{}', '{}', '{}', false, false)
             expect(result).toBe('README for empty project')
         })
 
         it('should handle very large inputs', async () => {
             const largeInput = 'x'.repeat(50000) // Adjust size as needed
             mockOpenAI.models.list.mockResolvedValue({data: [{id: 'gpt-4'}]})
-            await expect(openAIInferrence.generateReadme(largeInput, largeInput, largeInput, true, false, false)).rejects.toThrow('Prompt is Too Long')
+            await expect(openAIInferrence.generateReadme(largeInput, largeInput, largeInput, false, false)).rejects.toThrow('Prompt is Too Long')
         })
 
         // it('should handle streaming responses', async () => {
@@ -330,7 +331,6 @@ describe('OpenAIInferrence', () => {
 
             const result = await openAIInferrence.generateMonorepoReadme(
                 '{"packages": {"app1": {}, "app2": {}}}',
-                true,
                 false,
                 false
             )
@@ -344,7 +344,7 @@ describe('OpenAIInferrence', () => {
             mockOpenAI.chat.completions.create.mockResolvedValue(mockResponse)
             mockOpenAI.models.list.mockResolvedValue({data: [{id: 'gpt-4'}]})
 
-            const result = await openAIInferrence.generateMonorepoReadme('{}', true, false, false)
+            const result = await openAIInferrence.generateMonorepoReadme('{}', false, false)
             expect(result).toBe('README for empty monorepo')
         })
 
@@ -363,7 +363,7 @@ describe('OpenAIInferrence', () => {
             mockOpenAI.chat.completions.create.mockResolvedValue(mockResponse)
             mockOpenAI.models.list.mockResolvedValue({data: [{id: 'gpt-4'}]})
 
-            const result = await openAIInferrence.generateMonorepoReadme(complexMonorepo, true, false, false)
+            const result = await openAIInferrence.generateMonorepoReadme(complexMonorepo, false, false)
             expect(result).toBe('README for complex monorepo')
         })
 
@@ -423,7 +423,7 @@ describe('OpenAIInferrence', () => {
             mockOpenAI.chat.completions.create.mockRejectedValue(new Error('OpenAI API is down'))
             mockOpenAI.models.list.mockResolvedValue({data: [{id: 'gpt-4'}]})
 
-            await expect(openAIInferrence.inferProjectDirectory('{"src": {}}', true, false, false)).rejects.toThrow('OpenAI API is down')
+            await expect(openAIInferrence.inferProjectDirectory('{"src": {}}', false, false)).rejects.toThrow('OpenAI API is down')
         })
 
 

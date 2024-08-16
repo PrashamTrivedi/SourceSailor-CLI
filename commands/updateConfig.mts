@@ -8,11 +8,12 @@ export const command = 'updateConfig [apiKey|k] [model|m]'
 
 export const describe = 'Update OpenAI API Key and default model'
 
-import { Argv } from 'yargs';
+import {Argv} from 'yargs'
 
 export function builder(yargs: Argv) {
     yargs.option('apiKey', {
         describe: 'OpenAI API Key',
+        alias: 'o',
         type: 'string',
     })
     yargs.option('model', {
@@ -25,11 +26,16 @@ export function builder(yargs: Argv) {
         describe: 'Root directory to write the analysis. Default home directory. Use p to use the codebase directory.',
         type: 'string',
     })
+    yargs.option('geminiApiKey', {
+        describe: 'Gemini API Key',
+        alias: 'g',
+        type: 'string',
+    })
 
     return yargs
 }
 
-import { Arguments } from 'yargs';
+import {Arguments} from 'yargs'
 
 export function handler(argv: Arguments) {
     const homeDir = os.homedir()
@@ -44,6 +50,9 @@ export function handler(argv: Arguments) {
     }
     if (argv.analysisDir) {
         configData.ANALYSIS_DIR = argv.analysisDir
+    }
+    if (argv.geminiApiKey) {
+        configData.GEMINI_API_KEY = argv.geminiApiKey
     }
 
     fs.writeFileSync(configFile, JSON.stringify(configData))

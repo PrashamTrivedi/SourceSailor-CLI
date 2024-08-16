@@ -1,7 +1,8 @@
-import fs from 'fs'
+
 import path from 'path'
 import {getAnalysis, readConfig} from '../utils.mjs'
-import OpenAIInferrence, {LlmInterface} from "../openai.mjs"
+import ModelUtils from "../modelUtils.mjs"
+import {LlmInterface} from "../llmInterface.mjs"
 import ora from "ora"
 import {ChatCompletionChunk} from "openai/resources/index.mjs"
 import {Stream} from "openai/streaming.mjs"
@@ -40,12 +41,12 @@ import {Arguments} from 'yargs'
 
 export async function handler(argv: Arguments) {
     const isVerbose = argv.verbose as boolean || argv.v as boolean || false
-    const useOpenAi = true
     const allowStreaming = argv.streaming as boolean || argv.s as boolean || false
     const projectDir = argv.path as string || argv.p as string
     const config = readConfig()
-    const openai = new OpenAIInferrence()
-    const llmInterface: LlmInterface = openai
+    const modelUtils = ModelUtils.getInstance();
+    await modelUtils.initializeModels();
+    const llmInterface: LlmInterface = modelUtils.getLlmInterface(config.DEFAULT_OPENAI_MODEL);
     const rootDir = config.ANALYSIS_DIR
 
     const isProjectRoot = rootDir === 'p'
@@ -71,7 +72,7 @@ export async function handler(argv: Arguments) {
     if (isVerbose) {
         console.log({directoryStructure, dependencyInference, codeInference})
     }
-    const report = await llmInterface.generateReadme(directoryStructure, dependencyInference, codeInference, true, allowStreaming, isVerbose)
+    const report = await llmInterface.generateReadme(directoryStructure, dependencyInference, codeInference, allowStreaming, isVerbose)
 
     if (report) {
 

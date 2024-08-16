@@ -1,9 +1,10 @@
 import { Arguments, Argv } from "yargs"
-import OpenAIInferrence, { LlmInterface } from "../openai.mjs"
+import ModelUtils from "../modelUtils.mjs"
+import chalk from "chalk"
 
 export const command = 'listModels [verbose]'
 
-export const describe = 'List all available OpenAI models'
+export const describe = 'List all available models grouped by provider'
 
 export function builder(yargs: Argv) {
     return yargs.option('verbose', {
@@ -15,13 +16,24 @@ export function builder(yargs: Argv) {
 }
 
 export async function handler(argv: Arguments) {
-    console.log(`List all available OpenAI models`)
-    const openai = new OpenAIInferrence()
-    const llmInterface: LlmInterface = openai
+    console.log(chalk.blue('Listing all available models grouped by provider:'))
+    const modelUtils = ModelUtils.getInstance()
+    await modelUtils.initializeModels()
+
     try {
-        const models = await llmInterface.listModels(argv.verbose as boolean)
-        console.log(models)
+        const modelsByProvider = modelUtils.getModelsByProvider()
+
+        for (const [provider, models] of Object.entries(modelsByProvider)) {
+            console.log(chalk.green(`\n${provider}:`))
+            models.forEach(model => {
+                console.log(chalk.yellow(`  - ${model}`))
+            })
+        }
     } catch (error) {
-        console.error('Error listing models:', error)
+        console.error(chalk.red('Error listing models:'), error)
     }
 }
+
+export const usage = '$0 <cmd> [args]'
+
+export const aliases = ['models', 'lm']
