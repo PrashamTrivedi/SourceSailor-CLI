@@ -22,6 +22,9 @@ interface ModelLimit {
 
 
 export class OpenAIInferrence implements LlmInterface {
+    getName(): string {
+        return 'OpenAI'
+    }
     private modelLimits: ModelLimit[] = [
         {name: 'gpt-4', limit: 8000},
         {name: 'gpt-4-32k', limit: 32000},
@@ -123,17 +126,10 @@ export class OpenAIInferrence implements LlmInterface {
         }
     }
 
-    private async getModel(): Promise<string> {
-        const openai = this.getOpenAiClient()
+    private async getModel(modelName?: string): Promise<string> {
         const config = readConfig()
-
-        const models = await openai.models.list()
-        const gpt4 = models.data.find(model => model.id === config.DEFAULT_OPENAI_MODEL ?? process.env.DEFAULT_OPENAI_MODEL ?? 'gpt-4-preview')
-        if (gpt4) {
-            return gpt4.id
-        } else {
-            return models.data.find(model => model.id === 'gpt-3.5-turbo')?.id ?? 'gpt-3.5-turbo'
-        }
+        const defaultModel = config.DEFAULT_OPENAI_MODEL || process.env.DEFAULT_OPENAI_MODEL || 'gpt-4-preview'
+        return modelName || defaultModel
     }
 
     private getOpenAiClient(): OpenAI {
@@ -146,10 +142,11 @@ export class OpenAIInferrence implements LlmInterface {
         projectDirectory: string,
         isStreaming: boolean = false,
         isVerbose: boolean = false,
-        userExpertise?: string
+        userExpertise?: string,
+        modelName?: string
     ): Promise<string | undefined> {
         const openai = this.getOpenAiClient()
-        const model = await this.getModel()
+        const model = await this.getModel(modelName)
 
         const compatibilityMessage = this.createPrompt(
             `${prompts.commonSystemPrompt.prompt}\n${prompts.rootUnderstanding.prompt}`,
@@ -181,11 +178,12 @@ export class OpenAIInferrence implements LlmInterface {
         workflow: string,
         isStreaming: boolean = false,
         isVerbose: boolean = false,
-        userExpertise?: string
+        userExpertise?: string,
+        modelName?: string
     ): Promise<string | undefined | Stream<ChatCompletionChunk>> {
         // @ts-expect-error Exclude streaming from coverage
         const openai = this.getOpenAiClient(isVerbose)
-        const model = await this.getModel()
+        const model = await this.getModel(modelName)
         const compatibilityMessage = this.createPrompt(
             `${prompts.commonSystemPrompt.prompt}\n${prompts.dependencyUnderstanding.prompt}`,
             `<DependencyFile>${JSON.stringify(dependencyFile)}</DependencyFile>\n<Workflow>${workflow}</Workflow> ${prompts.commonMarkdownPrompt.prompt}`,

@@ -33,6 +33,11 @@ export function builder(yargs: Argv) {
         describe: 'Stream the output to a file',
         type: 'boolean',
     })
+    yargs.option('model', {
+        alias: 'm',
+        describe: 'Specify the AI model to use for report generation',
+        type: 'string'
+    })
 
     return yargs
 }
@@ -43,11 +48,17 @@ export async function handler(argv: Arguments) {
     const isVerbose = argv.verbose as boolean || argv.v as boolean || false
     const allowStreaming = argv.streaming as boolean || argv.s as boolean || false
     const projectDir = argv.path as string || argv.p as string
+    const modelName = argv.model as string || argv.m as string
     const config = readConfig()
-    const modelUtils = ModelUtils.getInstance();
-    await modelUtils.initializeModels();
-    const llmInterface: LlmInterface = modelUtils.getLlmInterface(config.DEFAULT_OPENAI_MODEL);
+    const modelUtils = ModelUtils.getInstance()
+    await modelUtils.initializeModels()
+    const llmInterface: LlmInterface = modelUtils.getLlmInterface(modelName || config.DEFAULT_OPENAI_MODEL)
     const rootDir = config.ANALYSIS_DIR
+    const selectedModelName = modelName || config.DEFAULT_OPENAI_MODEL
+
+    if (isVerbose) {
+        console.log(`Using model: ${selectedModelName}`)
+    }
 
     const isProjectRoot = rootDir === 'p'
     const dirPath = isProjectRoot ? projectDir : path.join(rootDir, '.SourceSailor', projectDir)
@@ -72,7 +83,7 @@ export async function handler(argv: Arguments) {
     if (isVerbose) {
         console.log({directoryStructure, dependencyInference, codeInference})
     }
-    const report = await llmInterface.generateReadme(directoryStructure, dependencyInference, codeInference, allowStreaming, isVerbose)
+    const report = await llmInterface.generateReadme(directoryStructure, dependencyInference, codeInference, allowStreaming, isVerbose, selectedModelName)
 
     if (report) {
 

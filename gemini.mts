@@ -1,8 +1,9 @@
 import {LlmInterface} from "./llmInterface.mjs"
 import {Stream} from "openai/streaming.mjs"
 import {ChatCompletionChunk} from "openai/resources/index.mjs"
-import {GoogleGenerativeAI, GenerativeModel} from "@google/generative-ai"
+import {GoogleGenerativeAI, GenerativeModel, SchemaType} from "@google/generative-ai"
 import {readConfig} from "./utils.mjs"
+import {prompts} from "./prompts.mjs"
 import axios from 'axios'
 
 interface ModelInfo {
@@ -20,6 +21,10 @@ interface ModelInfo {
 }
 
 export class GeminiInference implements LlmInterface {
+
+    getName(): string {
+        return "Gemini"
+    }
     private modelLimits: {name: string; limit: number}[] = [];
 
     private getGeminiClient(): GoogleGenerativeAI {
@@ -27,18 +32,44 @@ export class GeminiInference implements LlmInterface {
         return new GoogleGenerativeAI(config.GEMINI_API_KEY || process.env.GEMINI_API_KEY || "")
     }
 
-    private async getModel(): Promise<GenerativeModel> {
+    private async getModel(modelName?: string, systemPrompt?: string): Promise<GenerativeModel> {
         const genAI = this.getGeminiClient()
         const config = readConfig()
-        return genAI.getGenerativeModel({model: config.DEFAULT_GEMINI_MODEL || process.env.DEFAULT_GEMINI_MODEL || "gemini-pro"})
+        const selectedModel = modelName || config.DEFAULT_GEMINI_MODEL || process.env.DEFAULT_GEMINI_MODEL || "gemini-pro"
+
+        try {
+            const model = genAI.getGenerativeModel({
+                model: selectedModel,
+                generationConfig: {
+                    maxOutputTokens: 8192,
+                },
+            })
+            if (systemPrompt) {
+                model.systemInstruction = {
+                    role: "system", parts: [{
+                        text: systemPrompt
+                    }]
+                }
+            }
+            if (this.modelLimits.length === 0) {
+                await this.listModels(false)  // Populate modelLimits if not already done
+            }
+            const modelLimit = this.modelLimits.find(m => m.name === selectedModel)?.limit
+            if (modelLimit) {
+                model.generationConfig = {...model.generationConfig, maxOutputTokens: modelLimit}
+            }
+
+            return model
+        } catch (error) {
+            throw new Error(`Model ${selectedModel} not found or not available. Please choose a valid Gemini model.`)
+        }
     }
 
-    private createPrompt(systemPrompt: string, userPrompt: string, isVerbose: boolean, userExpertise?: string): string {
-        let finalPrompt = systemPrompt
+    private createPrompt(userPrompt: string, isVerbose: boolean, userExpertise?: string): string {
+        let finalPrompt = userPrompt
         if (userExpertise) {
-            finalPrompt += `\n<Expertise>${JSON.stringify(userExpertise)}</Expertise>`
+            finalPrompt = `<Expertise>${JSON.stringify(userExpertise)}</Expertise>\n\n${finalPrompt}`
         }
-        finalPrompt += `\n\n${userPrompt}`
 
         if (isVerbose) {
             console.log(`Full Prompt: ${finalPrompt}`)
@@ -72,69 +103,158 @@ export class GeminiInference implements LlmInterface {
         }
     }
 
-    async inferProjectDirectory(directoryStructure: string, allowStreaming: boolean, isVerbose: boolean, userExpertise?: string): Promise<string | undefined> {
-        const model = await this.getModel()
+    async inferProjectDirectory(directoryStructure: string, allowStreaming: boolean, isVerbose: boolean, userExpertise?: string, modelName?: string): Promise<string | undefined> {
+        const model = await this.getModel(modelName, `${prompts.commonSystemPrompt.prompt}\n${prompts.rootUnderstanding.prompt}`)
+
+        if (prompts.rootUnderstanding.params) {
+            model.generationConfig = {
+                responseMimeType: "application/json",
+                responseSchema: {
+                    type: SchemaType.OBJECT,
+                    properties: {
+
+                        isMonorepo: {
+                            type: SchemaType.BOOLEAN,
+                            description: prompts.rootUnderstanding.params.parameters.properties['isMonorepo'].description
+                        },
+                        directories: {
+                            type: SchemaType.ARRAY,
+                            items: {type: SchemaType.STRING},
+                            description: prompts.rootUnderstanding.params.parameters.properties['directories'].description
+                        },
+                        programmingLanguage: {
+                            type: SchemaType.STRING,
+                            description: prompts.rootUnderstanding.params.parameters.properties['programmingLanguage'].description
+                        },
+                        framework: {
+                            type: SchemaType.STRING,
+                            description: prompts.rootUnderstanding.params.parameters.properties['framework'].description
+                        },
+                        dependenciesFile: {
+                            type: SchemaType.STRING,
+                            description: prompts.rootUnderstanding.params.parameters.properties['dependenciesFile'].description
+                        },
+                        lockFile: {
+                            type: SchemaType.STRING,
+                            description: prompts.rootUnderstanding.params.parameters.properties['lockFile'].description
+                        },
+                        entryPointFile: {
+                            type: SchemaType.STRING,
+                            description: prompts.rootUnderstanding.params.parameters.properties['entryPointFile'].description
+                        },
+                        workflow: {
+                            type: SchemaType.STRING,
+                            description: prompts.rootUnderstanding.params.parameters.properties['workflow'].description
+                        },
+                    },
+                    required: prompts.rootUnderstanding.params.parameters.properties.required
+                }
+            }
+        }
+        if (isVerbose) {
+            console.log(`Model generation config: ${JSON.stringify(model)}`)
+        }
+
         const prompt = this.createPrompt(
-            "Analyze the following project directory structure:",
             `<FileStructure>${directoryStructure}</FileStructure>`,
             isVerbose,
             userExpertise
         )
 
-        const result = await model.generateContent(prompt)
-        return result.response.text()
+        const result = await model.generateContent({
+            contents: [{role: "user", parts: [{text: prompt}]}]
+        })
+
+        const responseText = result.response.text()
+        if (isVerbose) {
+            console.log("Gemini response:", responseText)
+        }
+
+        return responseText
     }
 
-    async inferDependency(dependencyFile: string, workflow: string, allowStreaming: boolean, isVerbose: boolean, userExpertise?: string): Promise<string | Stream<ChatCompletionChunk>> {
-        const model = await this.getModel()
+    async inferDependency(dependencyFile: string, workflow: string, allowStreaming: boolean, isVerbose: boolean, userExpertise?: string, modelName?: string): Promise<string | Stream<ChatCompletionChunk>> {
+        const model = await this.getModel(modelName, `${prompts.commonSystemPrompt.prompt}\n${prompts.dependencyUnderstanding.prompt}`)
         const prompt = this.createPrompt(
-            "Analyze the following dependency file and workflow:",
-            `<DependencyFile>${dependencyFile}</DependencyFile>\n<Workflow>${workflow}</Workflow>`,
+            `<DependencyFile>${dependencyFile}</DependencyFile>\n<Workflow>${workflow}</Workflow> ${prompts.commonMarkdownPrompt.prompt}`,
             isVerbose,
             userExpertise
         )
+        if (isVerbose) {
+            console.log(`Model generation config: ${JSON.stringify(model)}`)
+        }
+
 
         const result = await model.generateContent(prompt)
-        return result.response.text()
+        const responseText = result.response.text()
+        if (isVerbose) {
+            console.log("Gemini response:", responseText)
+        }
+
+        return responseText
     }
 
-    async inferCode(directoryStructure: string, allowStreaming: boolean, isVerbose: boolean, userExpertise?: string): Promise<string | Stream<ChatCompletionChunk>> {
-        const model = await this.getModel()
+    async inferCode(directoryStructure: string, allowStreaming: boolean, isVerbose: boolean, userExpertise?: string, modelName?: string): Promise<string | Stream<ChatCompletionChunk>> {
+        const model = await this.getModel(modelName, `${prompts.commonSystemPrompt.prompt}\n${prompts.codeUnderstanding.prompt}`)
         const prompt = this.createPrompt(
-            "Analyze the following code structure:",
-            `<Code>${directoryStructure}</Code>`,
+            `<Code>${directoryStructure}</Code> ${prompts.commonMarkdownPrompt.prompt}`,
             isVerbose,
             userExpertise
         )
+        if (isVerbose) {
+            console.log(`Model generation config: ${JSON.stringify(model)}`)
+        }
+
 
         const result = await model.generateContent(prompt)
-        return result.response.text()
+        const responseText = result.response.text()
+        if (isVerbose) {
+            console.log("Gemini response:", responseText)
+        }
+
+        return responseText
     }
 
-    async inferInterestingCode(directoryStructure: string, allowStreaming: boolean, isVerbose: boolean, userExpertise?: string): Promise<string | Stream<ChatCompletionChunk>> {
-        const model = await this.getModel()
+    async inferInterestingCode(directoryStructure: string, allowStreaming: boolean, isVerbose: boolean, userExpertise?: string, modelName?: string): Promise<string | Stream<ChatCompletionChunk>> {
+        const model = await this.getModel(modelName, prompts.interestingCodeParts.prompt)
         const prompt = this.createPrompt(
-            "Identify interesting parts in the following code structure:",
-            `<Code>${directoryStructure}</Code>`,
+            `<Code>${directoryStructure}</Code> ${prompts.commonMarkdownPrompt.prompt}`,
             isVerbose,
             userExpertise
         )
+        if (isVerbose) {
+            console.log(`Model generation config: ${JSON.stringify(model)}`)
+        }
+
 
         const result = await model.generateContent(prompt)
-        return result.response.text()
+        const responseText = result.response.text()
+        if (isVerbose) {
+            console.log("Gemini response:", responseText)
+        }
+
+        return responseText
     }
 
-    async generateReadme(directoryStructure: string, dependencyInference: string, codeInference: string, allowStreaming: boolean, isVerbose: boolean, userExpertise?: string): Promise<string | Stream<ChatCompletionChunk>> {
-        const model = await this.getModel()
+    async generateReadme(directoryStructure: string, dependencyInference: string, codeInference: string, allowStreaming: boolean, isVerbose: boolean, userExpertise?: string, modelName?: string): Promise<string | Stream<ChatCompletionChunk>> {
+        const model = await this.getModel(modelName, prompts.readmePrompt.prompt)
         const prompt = this.createPrompt(
-            "Generate a README based on the following project information:",
-            `<DirectoryStructure>${directoryStructure}</DirectoryStructure>\n<DependencyInference>${dependencyInference}</DependencyInference>\n<CodeInference>${codeInference}</CodeInference>`,
+            `<DirectoryStructure>${directoryStructure}</DirectoryStructure>\n<DependencyInference>${dependencyInference}</DependencyInference>\n<CodeInference>${codeInference}</CodeInference> ${prompts.commonMarkdownPrompt.prompt}`,
             isVerbose,
             userExpertise
         )
+        if (isVerbose) {
+            console.log(`Model generation config: ${JSON.stringify(model)}`)
+        }
+
 
         const result = await model.generateContent(prompt)
-        return result.response.text()
+        const responseText = result.response.text()
+        if (isVerbose) {
+            console.log("Gemini response:", responseText)
+        }
+
+        return responseText
     }
 }
 

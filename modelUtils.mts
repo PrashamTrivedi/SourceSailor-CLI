@@ -38,19 +38,18 @@ class ModelUtils {
         }
     }
 
-    public getLlmInterface(modelName: string): LlmInterface {
+    public getLlmInterface(modelName?: string): LlmInterface {
         const config = readConfig()
         const defaultModel = config.DEFAULT_OPENAI_MODEL || "gpt-3.5-turbo"
 
-        if (!modelName) {
-            modelName = defaultModel
-        }
+        const determinedModelName = modelName || defaultModel
+        
 
-        const llmInterface = this.modelCache.get(modelName)
+        const llmInterface = this.modelCache.get(determinedModelName)
 
         if (!llmInterface) {
-            throw new Error(`Model ${modelName} not found. Available models: ${this.modelList.join(", ")}`)
-        }
+            throw new Error(`Model ${determinedModelName} not found. Available models: ${this.modelList.join(", ")}`)
+        } 
 
         return llmInterface
     }
