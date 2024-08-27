@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest'
 import OpenAI from 'openai'
-import OpenAIInferrence from "../openai.mjs"
+import ModelUtils from '../modelUtils.mjs'
 
 // Mock OpenAI
 vi.mock('openai')

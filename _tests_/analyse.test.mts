@@ -61,17 +61,15 @@ describe('analyse command', () => {
 
     vi.mocked(directoryProcessor.getDirStructure).mockResolvedValue(mockDirectoryStructure as any)
     const mockModelUtils = {
-      getInstance: vi.fn().mockReturnValue({
-        initializeModels: vi.fn().mockResolvedValue(undefined),
-        getModelForName: vi.fn().mockReturnValue({
-          inferProjectDirectory: vi.fn().mockResolvedValue(JSON.stringify(mockDirectoryInference)),
-          inferCode: vi.fn().mockResolvedValue('Mocked code inference'),
-          inferInterestingCode: vi.fn().mockResolvedValue('Mocked interesting code'),
-          inferDependency: vi.fn().mockResolvedValue('Mocked dependency inference'),
-        }),
+      initializeModels: vi.fn().mockResolvedValue(undefined),
+      getLlmInterface: vi.fn().mockReturnValue({
+        inferProjectDirectory: vi.fn().mockResolvedValue(JSON.stringify(mockDirectoryInference)),
+        inferCode: vi.fn().mockResolvedValue('Mocked code inference'),
+        inferInterestingCode: vi.fn().mockResolvedValue('Mocked interesting code'),
+        inferDependency: vi.fn().mockResolvedValue('Mocked dependency inference'),
       }),
     }
-    vi.mocked(ModelUtils).mockImplementation(() => mockModelUtils as any)
+    vi.mocked(ModelUtils.getInstance).mockReturnValue(mockModelUtils as any)
     vi.mocked(utils.readConfig).mockReturnValue({ANALYSIS_DIR: '/test', userExpertise: 'intermediate'} as any)
     vi.mocked(fs.readFileSync).mockReturnValue('{}')
 
@@ -107,9 +105,13 @@ describe('analyse command', () => {
     }
 
     vi.mocked(directoryProcessor.getDirStructure).mockResolvedValue(mockDirectoryStructure as any)
-    vi.mocked(openai.default).mockReturnValue({
-      inferProjectDirectory: vi.fn().mockResolvedValue(JSON.stringify(mockDirectoryInference)),
-    } as any)
+    const mockModelUtils = {
+      initializeModels: vi.fn().mockResolvedValue(undefined),
+      getLlmInterface: vi.fn().mockReturnValue({
+        inferProjectDirectory: vi.fn().mockResolvedValue(JSON.stringify(mockDirectoryInference)),
+      }),
+    }
+    vi.mocked(ModelUtils.getInstance).mockReturnValue(mockModelUtils as any)
     vi.mocked(utils.readConfig).mockReturnValue({ANALYSIS_DIR: '/test'} as any)
     vi.mocked(fs.readFileSync).mockReturnValue('{}')
 
@@ -144,12 +146,16 @@ describe('analyse command', () => {
     }
 
     vi.mocked(directoryProcessor.getDirStructure).mockResolvedValue(mockDirectoryStructure as any)
-    vi.mocked(openai.default).mockReturnValue({
-      inferProjectDirectory: vi.fn().mockResolvedValue(JSON.stringify(mockDirectoryInference)),
-      inferCode: vi.fn().mockResolvedValue('Mocked code inference'),
-      inferInterestingCode: vi.fn().mockResolvedValue('Mocked interesting code'),
-      inferDependency: vi.fn().mockResolvedValue('Mocked dependency inference'),
-    } as any)
+    const mockModelUtils = {
+      initializeModels: vi.fn().mockResolvedValue(undefined),
+      getLlmInterface: vi.fn().mockReturnValue({
+        inferProjectDirectory: vi.fn().mockResolvedValue(JSON.stringify(mockDirectoryInference)),
+        inferCode: vi.fn().mockResolvedValue('Mocked code inference'),
+        inferInterestingCode: vi.fn().mockResolvedValue('Mocked interesting code'),
+        inferDependency: vi.fn().mockResolvedValue('Mocked dependency inference'),
+      }),
+    }
+    vi.mocked(ModelUtils.getInstance).mockReturnValue(mockModelUtils as any)
     vi.mocked(utils.readConfig).mockReturnValue({ANALYSIS_DIR: '/test'} as any)
     vi.mocked(fs.readFileSync).mockReturnValue('{}')
 
@@ -189,12 +195,17 @@ describe('analyse command', () => {
     }
 
     vi.mocked(directoryProcessor.getDirStructure).mockResolvedValue(mockDirectoryStructure as any)
-    vi.mocked(openai.default).mockReturnValue({
-      inferProjectDirectory: vi.fn().mockResolvedValue(JSON.stringify(mockDirectoryInference)),
-      inferCode: vi.fn().mockRejectedValue(new Error('Mocked error')),
-      inferInterestingCode: vi.fn().mockRejectedValue(new Error('Mocked error')),
-      inferDependency: vi.fn().mockResolvedValue('Mocked dependency inference'),
-    } as any)
+    const mockModelUtils = {
+      initializeModels: vi.fn().mockResolvedValue(undefined),
+      getLlmInterface: vi.fn().mockReturnValue({
+        inferProjectDirectory: vi.fn().mockResolvedValue(JSON.stringify(mockDirectoryInference)),
+        inferCode: vi.fn().mockRejectedValue(new Error('Mocked error')),
+        inferInterestingCode: vi.fn().mockRejectedValue(new Error('Mocked error')),
+        inferDependency: vi.fn().mockResolvedValue('Mocked dependency inference'),
+      }),
+
+    }
+    vi.mocked(ModelUtils.getInstance).mockReturnValue(mockModelUtils as any)
     vi.mocked(utils.readConfig).mockReturnValue({ANALYSIS_DIR: '/test'} as any)
     vi.mocked(fs.readFileSync).mockReturnValue('{}')
 
@@ -244,12 +255,16 @@ describe('analyse command', () => {
     }
 
     vi.mocked(directoryProcessor.getDirStructure).mockResolvedValue(mockDirectoryStructure as any)
-    vi.mocked(openai.default).mockReturnValue({
-      inferProjectDirectory: vi.fn().mockResolvedValue(JSON.stringify(mockDirectoryInference)),
-      inferCode: vi.fn().mockResolvedValue('Mocked code inference'),
-      inferInterestingCode: vi.fn().mockResolvedValue('Mocked interesting code'),
-      inferDependency: vi.fn().mockResolvedValue('Mocked dependency inference'),
-    } as any)
+    const mockModelUtils = {
+      initializeModels: vi.fn().mockResolvedValue(undefined),
+      getLlmInterface: vi.fn().mockReturnValue({
+        inferProjectDirectory: vi.fn().mockResolvedValue(JSON.stringify(mockDirectoryInference)),
+        inferCode: vi.fn().mockResolvedValue('Mocked code inference'),
+        inferInterestingCode: vi.fn().mockResolvedValue('Mocked interesting code'),
+        inferDependency: vi.fn().mockResolvedValue('Mocked dependency inference'),
+      }),
+    }
+    vi.mocked(ModelUtils.getInstance).mockReturnValue(mockModelUtils as any)
     vi.mocked(utils.readConfig).mockReturnValue({ANALYSIS_DIR: '/test'} as any)
     vi.mocked(fs.readFileSync).mockReturnValue('{}')
     vi.mocked(inquirer.confirm).mockResolvedValue(true)

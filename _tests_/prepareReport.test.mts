@@ -8,7 +8,18 @@ import * as inquirer from '@inquirer/prompts'
 import * as setExpertise from '../commands/setExpertise.mjs'
 
 vi.mock('../utils.mjs')
-vi.mock('../modelUtils.mjs')
+vi.mock('../modelUtils.mjs', () => {
+  return {
+    default: {
+      getInstance: vi.fn().mockReturnValue({
+        initializeModels: vi.fn().mockResolvedValue(undefined),
+        getLlmInterface: vi.fn().mockReturnValue({
+          generateReadme: vi.fn().mockResolvedValue('Generated README content'),
+        }),
+      }),
+    },
+  }
+})
 vi.mock('ora')
 vi.mock('@inquirer/prompts')
 vi.mock('../commands/setExpertise.mjs')
@@ -21,7 +32,7 @@ describe('prepareReport command', () => {
   })
 
   it('should fail if no analysis is found', async () => {
-    vi.mocked(utils.readConfig).mockReturnValue({ANALYSIS_DIR: 'test-dir'})
+    vi.mocked(utils.readConfig).mockReturnValue({ANALYSIS_DIR: 'test-dir', DEFAULT_OPENAI_MODEL: 'test-model'})
     vi.mocked(utils.getAnalysis).mockReturnValue({})
 
     const mockSpinner = {
@@ -29,6 +40,14 @@ describe('prepareReport command', () => {
       fail: vi.fn(),
     }
     vi.mocked(ora).mockReturnValue(mockSpinner as any)
+
+    const mockModelUtils = {
+      initializeModels: vi.fn().mockResolvedValue(undefined),
+      getLlmInterface: vi.fn().mockReturnValue({
+        generateReadme: vi.fn().mockResolvedValue(null),
+      }),
+    }
+    vi.mocked(ModelUtils.getInstance).mockReturnValue(mockModelUtils as any)
 
     await handler({path: 'test-project', verbose: false, streaming: false} as any)
 
@@ -47,14 +66,12 @@ describe('prepareReport command', () => {
     vi.mocked(utils.getAnalysis).mockReturnValue(mockAnalysis)
 
     const mockModelUtils = {
-      getInstance: vi.fn().mockReturnValue({
-        initializeModels: vi.fn().mockResolvedValue(undefined),
-        getModelForName: vi.fn().mockReturnValue({
-          generateReadme: vi.fn().mockResolvedValue(mockReport),
-        }),
+      initializeModels: vi.fn().mockResolvedValue(undefined),
+      getLlmInterface: vi.fn().mockReturnValue({
+        generateReadme: vi.fn().mockResolvedValue(mockReport),
       }),
     }
-    vi.mocked(ModelUtils).mockImplementation(() => mockModelUtils as any)
+    vi.mocked(ModelUtils.getInstance).mockReturnValue(mockModelUtils as any)
 
     const mockSpinner = {
       start: vi.fn().mockReturnThis(),
@@ -64,11 +81,10 @@ describe('prepareReport command', () => {
 
     await handler({path: 'test-project', verbose: false, streaming: false} as any)
 
-    expect(mockOpenAI.generateReadme).toHaveBeenCalledWith(
+    expect(mockModelUtils.getLlmInterface().generateReadme).toHaveBeenCalledWith(
       'mock directory structure',
       'mock dependency inference',
       'mock code inference',
-      true,
       false,
       false
     )
@@ -89,10 +105,13 @@ describe('prepareReport command', () => {
     vi.mocked(utils.readConfig).mockReturnValue({ANALYSIS_DIR: 'test-dir'})
     vi.mocked(utils.getAnalysis).mockReturnValue(mockAnalysis)
 
-    const mockOpenAI = {
-      generateReadme: vi.fn().mockResolvedValue(mockStreamChunks),
+    const mockModelUtils = {
+      initializeModels: vi.fn().mockResolvedValue(undefined),
+      getLlmInterface: vi.fn().mockReturnValue({
+        generateReadme: vi.fn().mockResolvedValue(mockStreamChunks),
+      }),
     }
-    vi.mocked(OpenAIInferrence).mockImplementation(() => mockOpenAI as any)
+    vi.mocked(ModelUtils.getInstance).mockReturnValue(mockModelUtils as any)
 
     const mockSpinner = {
       start: vi.fn().mockReturnThis(),
@@ -108,11 +127,10 @@ describe('prepareReport command', () => {
 
     await handler({path: 'test-project', verbose: false, streaming: true} as any)
 
-    expect(mockOpenAI.generateReadme).toHaveBeenCalledWith(
+    expect(mockModelUtils.getLlmInterface().generateReadme).toHaveBeenCalledWith(
       'mock directory structure',
       'mock dependency inference',
       'mock code inference',
-      true,
       true,
       false
     )
@@ -134,10 +152,13 @@ describe('prepareReport command', () => {
     vi.mocked(utils.readConfig).mockReturnValue({ANALYSIS_DIR: 'test-dir'})
     vi.mocked(utils.getAnalysis).mockReturnValue(mockAnalysis)
 
-    const mockOpenAI = {
-      generateReadme: vi.fn().mockResolvedValue(mockReport),
+    const mockModelUtils = {
+      initializeModels: vi.fn().mockResolvedValue(undefined),
+      getLlmInterface: vi.fn().mockReturnValue({
+        generateReadme: vi.fn().mockResolvedValue(mockReport),
+      }),
     }
-    vi.mocked(OpenAIInferrence).mockImplementation(() => mockOpenAI as any)
+    vi.mocked(ModelUtils.getInstance).mockReturnValue(mockModelUtils as any)
 
     const mockSpinner = {
       start: vi.fn().mockReturnThis(),
@@ -173,9 +194,15 @@ describe('prepareReport command', () => {
 
     vi.mocked(utils.readConfig).mockReturnValue({ANALYSIS_DIR: 'test-dir'})
     vi.mocked(utils.getAnalysis).mockReturnValue(mockAnalysis)
-    vi.mocked(OpenAIInferrence).mockImplementation(() => ({
-      generateReadme: vi.fn().mockResolvedValue(mockReport),
-    } as any))
+
+    const mockModelUtils = {
+      initializeModels: vi.fn().mockResolvedValue(undefined),
+      getLlmInterface: vi.fn().mockReturnValue({
+        generateReadme: vi.fn().mockResolvedValue(mockReport),
+      }),
+    }
+    vi.mocked(ModelUtils.getInstance).mockReturnValue(mockModelUtils as any)
+
     vi.mocked(ora).mockReturnValue({
       start: vi.fn().mockReturnThis(),
       stopAndPersist: vi.fn(),
@@ -201,9 +228,13 @@ describe('prepareReport command', () => {
 
     vi.mocked(utils.readConfig).mockReturnValue({ANALYSIS_DIR: 'test-dir', userExpertise: 'intermediate'})
     vi.mocked(utils.getAnalysis).mockReturnValue(mockAnalysis)
-    vi.mocked(OpenAIInferrence).mockImplementation(() => ({
-      generateReadme: vi.fn().mockResolvedValue(mockReport),
-    } as any))
+    const mockModelUtils = {
+      initializeModels: vi.fn().mockResolvedValue(undefined),
+      getLlmInterface: vi.fn().mockReturnValue({
+        generateReadme: vi.fn().mockResolvedValue(mockReport),
+      }),
+    }
+    vi.mocked(ModelUtils.getInstance).mockReturnValue(mockModelUtils as any)
     vi.mocked(ora).mockReturnValue({
       start: vi.fn().mockReturnThis(),
       stopAndPersist: vi.fn(),
