@@ -63,6 +63,7 @@ describe('analyse command', () => {
     const mockModelUtils = {
       initializeModels: vi.fn().mockResolvedValue(undefined),
       getLlmInterface: vi.fn().mockReturnValue({
+        getName: vi.fn().mockReturnValue('Mocked model'),
         inferProjectDirectory: vi.fn().mockResolvedValue(JSON.stringify(mockDirectoryInference)),
         inferCode: vi.fn().mockResolvedValue('Mocked code inference'),
         inferInterestingCode: vi.fn().mockResolvedValue('Mocked interesting code'),
@@ -108,6 +109,7 @@ describe('analyse command', () => {
     const mockModelUtils = {
       initializeModels: vi.fn().mockResolvedValue(undefined),
       getLlmInterface: vi.fn().mockReturnValue({
+        getName: vi.fn().mockReturnValue('Mocked model'),
         inferProjectDirectory: vi.fn().mockResolvedValue(JSON.stringify(mockDirectoryInference)),
       }),
     }
@@ -149,6 +151,7 @@ describe('analyse command', () => {
     const mockModelUtils = {
       initializeModels: vi.fn().mockResolvedValue(undefined),
       getLlmInterface: vi.fn().mockReturnValue({
+        getName: vi.fn().mockReturnValue('Mocked model'),
         inferProjectDirectory: vi.fn().mockResolvedValue(JSON.stringify(mockDirectoryInference)),
         inferCode: vi.fn().mockResolvedValue('Mocked code inference'),
         inferInterestingCode: vi.fn().mockResolvedValue('Mocked interesting code'),
@@ -198,6 +201,7 @@ describe('analyse command', () => {
     const mockModelUtils = {
       initializeModels: vi.fn().mockResolvedValue(undefined),
       getLlmInterface: vi.fn().mockReturnValue({
+        getName: vi.fn().mockReturnValue('Mocked model'),
         inferProjectDirectory: vi.fn().mockResolvedValue(JSON.stringify(mockDirectoryInference)),
         inferCode: vi.fn().mockRejectedValue(new Error('Mocked error')),
         inferInterestingCode: vi.fn().mockRejectedValue(new Error('Mocked error')),
@@ -258,6 +262,7 @@ describe('analyse command', () => {
     const mockModelUtils = {
       initializeModels: vi.fn().mockResolvedValue(undefined),
       getLlmInterface: vi.fn().mockReturnValue({
+        getName: vi.fn().mockReturnValue('Mocked model'),
         inferProjectDirectory: vi.fn().mockResolvedValue(JSON.stringify(mockDirectoryInference)),
         inferCode: vi.fn().mockResolvedValue('Mocked code inference'),
         inferInterestingCode: vi.fn().mockResolvedValue('Mocked interesting code'),

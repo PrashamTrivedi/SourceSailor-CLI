@@ -14,6 +14,7 @@ vi.mock('../modelUtils.mjs', () => {
       getInstance: vi.fn().mockReturnValue({
         initializeModels: vi.fn().mockResolvedValue(undefined),
         getLlmInterface: vi.fn().mockReturnValue({
+          getName: vi.fn().mockReturnValue('Mocked model'),
           generateReadme: vi.fn().mockResolvedValue('Generated README content'),
         }),
       }),
@@ -44,6 +45,7 @@ describe('prepareReport command', () => {
     const mockModelUtils = {
       initializeModels: vi.fn().mockResolvedValue(undefined),
       getLlmInterface: vi.fn().mockReturnValue({
+        getName: vi.fn().mockReturnValue('Mocked model'),
         generateReadme: vi.fn().mockResolvedValue(null),
       }),
     }
@@ -68,6 +70,7 @@ describe('prepareReport command', () => {
     const mockModelUtils = {
       initializeModels: vi.fn().mockResolvedValue(undefined),
       getLlmInterface: vi.fn().mockReturnValue({
+        getName: vi.fn().mockReturnValue('Mocked model'),
         generateReadme: vi.fn().mockResolvedValue(mockReport),
       }),
     }
@@ -86,7 +89,9 @@ describe('prepareReport command', () => {
       'mock dependency inference',
       'mock code inference',
       false,
-      false
+      false,
+      undefined,
+      undefined
     )
     expect(mockSpinner.stopAndPersist).toHaveBeenCalledWith({symbol: '✔️', text: mockReport})
   })
@@ -108,6 +113,7 @@ describe('prepareReport command', () => {
     const mockModelUtils = {
       initializeModels: vi.fn().mockResolvedValue(undefined),
       getLlmInterface: vi.fn().mockReturnValue({
+        getName: vi.fn().mockReturnValue('Mocked model'),
         generateReadme: vi.fn().mockResolvedValue(mockStreamChunks),
       }),
     }
@@ -132,7 +138,9 @@ describe('prepareReport command', () => {
       'mock dependency inference',
       'mock code inference',
       true,
-      false
+      false,
+      undefined,
+      undefined
     )
     expect(mockSpinner.stop).toHaveBeenCalled()
     expect(mockSpinner.clear).toHaveBeenCalled()
@@ -155,6 +163,7 @@ describe('prepareReport command', () => {
     const mockModelUtils = {
       initializeModels: vi.fn().mockResolvedValue(undefined),
       getLlmInterface: vi.fn().mockReturnValue({
+        getName: vi.fn().mockReturnValue('Mocked model'),
         generateReadme: vi.fn().mockResolvedValue(mockReport),
       }),
     }
@@ -198,6 +207,7 @@ describe('prepareReport command', () => {
     const mockModelUtils = {
       initializeModels: vi.fn().mockResolvedValue(undefined),
       getLlmInterface: vi.fn().mockReturnValue({
+        getName: vi.fn().mockReturnValue('Mocked model'),
         generateReadme: vi.fn().mockResolvedValue(mockReport),
       }),
     }
@@ -231,6 +241,7 @@ describe('prepareReport command', () => {
     const mockModelUtils = {
       initializeModels: vi.fn().mockResolvedValue(undefined),
       getLlmInterface: vi.fn().mockReturnValue({
+        getName: vi.fn().mockReturnValue('Mocked model'),
         generateReadme: vi.fn().mockResolvedValue(mockReport),
       }),
     }

@@ -55,7 +55,7 @@ export async function handler(argv: Arguments) {
     const llmInterface: LlmInterface = modelUtils.getLlmInterface(modelName || config.DEFAULT_OPENAI_MODEL)
     const rootDir = config.ANALYSIS_DIR
     const selectedModelName = modelName || config.DEFAULT_OPENAI_MODEL
-
+    const userExpertise = JSON.stringify(config.userExpertise)
     if (isVerbose) {
         console.log(`Using model: ${selectedModelName}`)
     }
@@ -83,7 +83,7 @@ export async function handler(argv: Arguments) {
     if (isVerbose) {
         console.log({directoryStructure, dependencyInference, codeInference})
     }
-    const report = await llmInterface.generateReadme(directoryStructure, dependencyInference, codeInference, allowStreaming, isVerbose, selectedModelName)
+    const report = await llmInterface.generateReadme(directoryStructure, dependencyInference, codeInference, allowStreaming, isVerbose, userExpertise, selectedModelName)
 
     if (report) {
 
