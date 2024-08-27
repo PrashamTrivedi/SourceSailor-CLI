@@ -2,7 +2,7 @@
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest'
 import {handler} from '../commands/analyse.mjs'
 import * as directoryProcessor from '../directoryProcessor.mjs'
-import * as openai from '../openai.mjs'
+import ModelUtils from '../modelUtils.mjs'
 import * as utils from '../utils.mjs'
 import fs from 'fs'
 import ora from 'ora'
@@ -10,7 +10,7 @@ import * as inquirer from '@inquirer/prompts'
 import * as setExpertise from '../commands/setExpertise.mjs'
 
 vi.mock('../directoryProcessor.mjs')
-vi.mock('../openai.mjs')
+vi.mock('../modelUtils.mjs')
 vi.mock('../utils.mjs')
 vi.mock('fs')
 vi.mock('ora')
@@ -60,12 +60,18 @@ describe('analyse command', () => {
     }
 
     vi.mocked(directoryProcessor.getDirStructure).mockResolvedValue(mockDirectoryStructure as any)
-    vi.mocked(openai.default).mockReturnValue({
-      inferProjectDirectory: vi.fn().mockResolvedValue(JSON.stringify(mockDirectoryInference)),
-      inferCode: vi.fn().mockResolvedValue('Mocked code inference'),
-      inferInterestingCode: vi.fn().mockResolvedValue('Mocked interesting code'),
-      inferDependency: vi.fn().mockResolvedValue('Mocked dependency inference'),
-    } as any)
+    const mockModelUtils = {
+      getInstance: vi.fn().mockReturnValue({
+        initializeModels: vi.fn().mockResolvedValue(undefined),
+        getModelForName: vi.fn().mockReturnValue({
+          inferProjectDirectory: vi.fn().mockResolvedValue(JSON.stringify(mockDirectoryInference)),
+          inferCode: vi.fn().mockResolvedValue('Mocked code inference'),
+          inferInterestingCode: vi.fn().mockResolvedValue('Mocked interesting code'),
+          inferDependency: vi.fn().mockResolvedValue('Mocked dependency inference'),
+        }),
+      }),
+    }
+    vi.mocked(ModelUtils).mockImplementation(() => mockModelUtils as any)
     vi.mocked(utils.readConfig).mockReturnValue({ANALYSIS_DIR: '/test', userExpertise: 'intermediate'} as any)
     vi.mocked(fs.readFileSync).mockReturnValue('{}')
 

@@ -1,4 +1,4 @@
-import { Arguments, Argv } from "yargs"
+import {Arguments, Argv} from "yargs"
 import ModelUtils from "../modelUtils.mjs"
 import chalk from "chalk"
 
@@ -15,12 +15,13 @@ export function builder(yargs: Argv) {
     })
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export async function handler(argv: Arguments) {
     console.log(chalk.blue('Listing all available models grouped by provider:'))
-    const modelUtils = ModelUtils.getInstance()
-    await modelUtils.initializeModels()
-
     try {
+        const modelUtils = ModelUtils.getInstance()
+        await modelUtils.initializeModels()
+
         const modelsByProvider = modelUtils.getModelsByProvider()
 
         for (const [provider, models] of Object.entries(modelsByProvider)) {

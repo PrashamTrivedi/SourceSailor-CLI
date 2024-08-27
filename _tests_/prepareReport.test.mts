@@ -2,13 +2,13 @@
 import {describe, it, expect, vi, beforeEach} from 'vitest'
 import {handler} from '../commands/prepareReport.mjs'
 import * as utils from '../utils.mjs'
-import OpenAIInferrence from '../openai.mjs'
+import ModelUtils from '../modelUtils.mjs'
 import ora from 'ora'
 import * as inquirer from '@inquirer/prompts'
 import * as setExpertise from '../commands/setExpertise.mjs'
 
 vi.mock('../utils.mjs')
-vi.mock('../openai.mjs')
+vi.mock('../modelUtils.mjs')
 vi.mock('ora')
 vi.mock('@inquirer/prompts')
 vi.mock('../commands/setExpertise.mjs')
@@ -46,10 +46,15 @@ describe('prepareReport command', () => {
     vi.mocked(utils.readConfig).mockReturnValue({ANALYSIS_DIR: 'test-dir'})
     vi.mocked(utils.getAnalysis).mockReturnValue(mockAnalysis)
 
-    const mockOpenAI = {
-      generateReadme: vi.fn().mockResolvedValue(mockReport),
+    const mockModelUtils = {
+      getInstance: vi.fn().mockReturnValue({
+        initializeModels: vi.fn().mockResolvedValue(undefined),
+        getModelForName: vi.fn().mockReturnValue({
+          generateReadme: vi.fn().mockResolvedValue(mockReport),
+        }),
+      }),
     }
-    vi.mocked(OpenAIInferrence).mockImplementation(() => mockOpenAI as any)
+    vi.mocked(ModelUtils).mockImplementation(() => mockModelUtils as any)
 
     const mockSpinner = {
       start: vi.fn().mockReturnThis(),

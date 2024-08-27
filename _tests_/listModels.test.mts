@@ -1,21 +1,28 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import yargs from 'yargs'
-import {hideBin} from "yargs/helpers"
-import {command, describe as commandDescribe, builder, handler} from '../commands/listModels.mjs'
-import OpenAIInferrence from '../openai.mjs'
+import { hideBin } from "yargs/helpers"
+import { command, describe as commandDescribe, builder, handler } from '../commands/listModels.mjs'
+import ModelUtils from '../modelUtils.mjs'
 
 const yargsSetup = yargs(hideBin(process.argv))
 
-vi.mock('../openai.mjs')
+vi.mock('../modelUtils.mjs')
 
 describe("List Models Command Tests", () => {
-  const mockModels = ['gpt-4', 'gpt-3.5-turbo', 'davinci']
+  const mockModelsByProvider = {
+    'OpenAI': ['gpt-4', 'gpt-3.5-turbo'],
+    'Gemini': ['gemini-pro', 'gemini-1.5-pro'],
+    'Anthropic': ['claude-2', 'claude-instant-1']
+  }
 
   beforeEach(() => {
     vi.spyOn(console, 'log').mockImplementation(() => { })
     vi.spyOn(console, 'error').mockImplementation(() => { })
-    vi.mocked(OpenAIInferrence.prototype.listModels).mockResolvedValue(mockModels)
+    vi.mocked(ModelUtils.getInstance).mockReturnValue({
+      initializeModels: vi.fn().mockResolvedValue(undefined),
+      getModelsByProvider: vi.fn().mockReturnValue(mockModelsByProvider)
+    } as any)
   })
 
   afterEach(() => {
@@ -31,11 +38,11 @@ describe("List Models Command Tests", () => {
       })
     })
 
-    expect(output).toContain("List all available OpenAI models")
+    expect(output).toContain("List all available models grouped by provider")
     expect(output).toContain("--verbose")
   })
 
-  it("lists models without verbose flag", async () => {
+  it("lists models grouped by provider", async () => {
     const parser = yargsSetup.command({command, describe: commandDescribe, builder, handler})
     await new Promise((resolve) => {
       parser.parse("listModels", (_err: any, argv: unknown) => {
@@ -43,26 +50,37 @@ describe("List Models Command Tests", () => {
       })
     })
 
-    expect(console.log).toHaveBeenCalledWith("List all available OpenAI models")
-    expect(console.log).toHaveBeenCalledWith(mockModels)
-  })
-
-  it("lists models with verbose flag", async () => {
-    const parser = yargsSetup.command({command, describe: commandDescribe, builder, handler})
-    await new Promise((resolve) => {
-      parser.parse("listModels --verbose", (_err: any, argv: unknown) => {
-        resolve(argv)
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Listing all available models grouped by provider:'))
+    Object.entries(mockModelsByProvider).forEach(([provider, models]) => {
+      expect(console.log).toHaveBeenCalledWith(expect.stringContaining(`${provider}:`))
+      models.forEach(model => {
+        expect(console.log).toHaveBeenCalledWith(expect.stringContaining(`  - ${model}`))
       })
     })
-
-    expect(console.log).toHaveBeenCalledWith("List all available OpenAI models")
-    expect(OpenAIInferrence.prototype.listModels).toHaveBeenCalledWith(true)
-    expect(console.log).toHaveBeenCalledWith(mockModels)
   })
 
   it("handles errors when listing models", async () => {
     const mockError = new Error("API Error")
-    vi.mocked(OpenAIInferrence.prototype.listModels).mockRejectedValue(mockError)
+    vi.mocked(ModelUtils.getInstance).mockReturnValue({
+      initializeModels: vi.fn().mockRejectedValue(mockError),
+      getModelsByProvider: vi.fn()
+    } as any)
+
+    await handler({} as any)
+
+    expect(console.error).toHaveBeenCalledWith(expect.stringContaining('Error listing models:'), mockError)
+  })
+
+  it("handles empty model list for a provider", async () => {
+    const emptyModelsByProvider = {
+      'OpenAI': ['gpt-4'],
+      'Gemini': [],
+      'Anthropic': ['claude-2']
+    }
+    vi.mocked(ModelUtils.getInstance).mockReturnValue({
+      initializeModels: vi.fn().mockResolvedValue(undefined),
+      getModelsByProvider: vi.fn().mockReturnValue(emptyModelsByProvider)
+    } as any)
 
     const parser = yargsSetup.command({command, describe: commandDescribe, builder, handler})
     await new Promise((resolve) => {
@@ -71,6 +89,11 @@ describe("List Models Command Tests", () => {
       })
     })
 
-    expect(console.error).toHaveBeenCalledWith('Error listing models:', mockError)
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('OpenAI:'))
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('  - gpt-4'))
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Gemini:'))
+    expect(console.log).not.toHaveBeenCalledWith(expect.stringContaining('  - gemini-pro'))
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('Anthropic:'))
+    expect(console.log).toHaveBeenCalledWith(expect.stringContaining('  - claude-2'))
   })
 })
