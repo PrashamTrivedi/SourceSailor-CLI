@@ -99,3 +99,20 @@ export async function processStream<T>(iterator: AsyncIterator<T>, processChunk:
 
     return fullResponse
 }
+export function maskSensitiveInfo(input: string): string {
+    // This is a simple implementation. You might want to enhance it based on your specific needs.
+    const sensitivePatterns = [
+        /api[-_]?key/i,
+        /password/i,
+        /secret/i,
+        /token/i,
+        /credential/i
+    ]
+
+    let maskedInput = input
+    for (const pattern of sensitivePatterns) {
+        maskedInput = maskedInput.replace(new RegExp(`(${pattern.source}\\s*[=:])\\s*["']?[^"'\\s]+["']?`, 'gi'), '$1 "********"')
+    }
+
+    return maskedInput
+}
