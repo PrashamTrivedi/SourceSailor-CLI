@@ -22,10 +22,11 @@ export function writeConfig(config: any) {
     const configDir = path.join(homeDir, '.SourceSailor')
     const configFile = path.join(configDir, 'config.json')
     if (!fs.existsSync(configDir)) {
-        fs.mkdirSync(configDir, { recursive: true })
+        fs.mkdirSync(configDir, {recursive: true})
     }
     fs.writeFileSync(configFile, JSON.stringify(config, null, 2))
 }
+
 
 export function addAnalysisInGitIgnore(projectRoot: string) {
     // First check if the project root has gitignore file, if the file is not found don't create one.
@@ -85,4 +86,16 @@ export function getAnalysis(projectRoot: string, isProjectRoot: boolean) {
         }
     }
     return analysis
+}
+export async function processStream<T>(iterator: AsyncIterator<T>, processChunk: (chunk: T) => string): Promise<string> {
+    let fullResponse = ''
+
+    const {value, done} = await iterator.next()
+    while (done) {
+        const message = processChunk(value)
+        process.stdout.write(message)
+        fullResponse += message
+    }
+
+    return fullResponse
 }

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest'
 import OpenAI from 'openai'
 import OpenAIInferrence from "../openai.mjs"
 
@@ -27,8 +27,6 @@ describe('OpenAIInferrence', () => {
         (OpenAI as any).mockImplementation(() => mockOpenAI)
         openAIInferrence = new OpenAIInferrence()
 
-        // Mock calculateTokens method
-        vi.spyOn(openAIInferrence as any, 'calculateTokens').mockResolvedValue(100)
 
         // Mock getModel method
         vi.spyOn(openAIInferrence as any, 'getModel').mockResolvedValue('gpt-4')
@@ -120,12 +118,8 @@ describe('OpenAIInferrence', () => {
             expect(result).toBeUndefined()
         })
 
-        it('should throw an error if the prompt is too long', async () => {
-            vi.spyOn(openAIInferrence as any, 'calculateTokens').mockResolvedValue(1000000)
-            const longDirectory = JSON.stringify({...Array(5000).fill('longfile.js')})
 
-            await expect(openAIInferrence.inferProjectDirectory(longDirectory, false, false)).rejects.toThrow('Prompt is Too Long')
-        })
+
 
         it('should handle invalid JSON input', async () => {
             await expect(openAIInferrence.inferProjectDirectory('invalid json', false, false)).rejects.toThrow()
@@ -217,14 +211,6 @@ describe('OpenAIInferrence', () => {
             expect(result).toBe('No code provided')
         })
 
-        it('should handle very large code input', async () => {
-            const largeCode = 'x'.repeat(100000) // Adjust size as needed
-            mockOpenAI.models.list.mockResolvedValue({data: [{id: 'gpt-4'}]})
-            vi.spyOn(openAIInferrence as any, 'calculateTokensAndCheckLimit').mockImplementation(() => {
-                throw new Error('Prompt is Too Long')
-            })
-            await expect(openAIInferrence.inferCode(largeCode, false, false)).rejects.toThrow('Prompt is Too Long')
-        })
     })
 
     describe('inferInterestingCode', () => {
@@ -307,14 +293,6 @@ describe('OpenAIInferrence', () => {
             expect(result).toBe('README for empty project')
         })
 
-        it('should handle very large inputs', async () => {
-            const largeInput = 'x'.repeat(50000) // Adjust size as needed
-            mockOpenAI.models.list.mockResolvedValue({data: [{id: 'gpt-4'}]})
-            vi.spyOn(openAIInferrence as any, 'calculateTokensAndCheckLimit').mockImplementation(() => {
-                throw new Error('Prompt is Too Long')
-            })
-            await expect(openAIInferrence.generateReadme(largeInput, largeInput, largeInput, false, false)).rejects.toThrow('Prompt is Too Long')
-        })
 
         // it('should handle streaming responses', async () => {
         //     const mockStream = new Stream()

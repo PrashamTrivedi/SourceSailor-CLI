@@ -1,5 +1,4 @@
 import OpenAI from 'openai'
-import {get_encoding} from "tiktoken"
 import {Stream} from "openai/streaming"
 import {prompts} from "./prompts.mjs"
 import {readConfig} from "./utils.mjs"
@@ -40,12 +39,6 @@ export class OpenAIInferrence implements LlmInterface {
         {name: 'gpt-3.5-turbo-16k', limit: 16000}
     ]
 
-    private async calculateTokens(messages: ChatCompletionMessageParam[]): Promise<number> {
-        const chatMessages = messages.filter(message => message.content?.length ?? 0 > 0).map(message => message.content)
-        const enc = await get_encoding("cl100k_base")
-        const tokens = enc.encode(chatMessages.join('\n'))
-        return tokens.length
-    }
 
     private createPrompt(systemPrompt: string, userPrompt: string, isVerbose: boolean, userExpertise?: string): ChatCompletionMessageParam[] {
         let finalSystemPrompt = systemPrompt
@@ -66,22 +59,6 @@ export class OpenAIInferrence implements LlmInterface {
         return compatibilityMessage
     }
 
-    private async calculateTokensAndCheckLimit(
-        compatibilityMessage: ChatCompletionMessageParam[],
-        model: string,
-        isVerbose: boolean
-    ): Promise<void> {
-        const tokens = await this.calculateTokens(compatibilityMessage)
-        const modelLimit = this.modelLimits.find(modelLimit => modelLimit.name === model)
-        const modelLimitTokens = modelLimit?.limit ?? 0
-        if (isVerbose) {
-            console.log(`Model limit: ${modelLimitTokens}, Tokens: ${tokens}`)
-        }
-        if (modelLimitTokens < tokens) {
-            throw new Error(`Prompt is Too Long. It has ${tokens} tokens, but the limit is ${modelLimit?.limit}`)
-        }
-    }
-
     private async callApiAndReturnResult(
         openai: OpenAI,
         model: string,
@@ -89,7 +66,7 @@ export class OpenAIInferrence implements LlmInterface {
         isStreaming: boolean,
         isVerbose: boolean,
         tools?: ChatCompletionTool[]
-    ): Promise<string | undefined | Stream<ChatCompletionChunk>> {
+    ): Promise<string | undefined | AsyncIterable<string>> {
         const apiParams: ChatCompletionCreateParamsBase = {
             model,
             messages: compatibilityMessage,
@@ -111,7 +88,10 @@ export class OpenAIInferrence implements LlmInterface {
         }
         if (isStreaming) {
             // @ts-expect-erro Exclude streaming from coverage
-            return matchJson as Stream<ChatCompletionChunk>
+            const matchJsonStream = matchJson as Stream<ChatCompletionChunk>
+
+
+            return this.convertStreamToStringStream(matchJsonStream)
         } else {
             const completionData = matchJson as ChatCompletion
             if (completionData.choices.length === 0) {
@@ -155,7 +135,7 @@ export class OpenAIInferrence implements LlmInterface {
             userExpertise
         )
 
-        await this.calculateTokensAndCheckLimit(compatibilityMessage, model, isVerbose)
+
         const tools: ChatCompletionTool[] = []
 
         if (prompts.rootUnderstanding.params) {
@@ -180,7 +160,7 @@ export class OpenAIInferrence implements LlmInterface {
         isVerbose: boolean = false,
         userExpertise?: string,
         modelName?: string
-    ): Promise<string | undefined | Stream<ChatCompletionChunk>> {
+    ): Promise<string | undefined | AsyncIterable<string>> {
         // @ts-expect-error Exclude streaming from coverage
         const openai = this.getOpenAiClient(isVerbose)
         const model = await this.getModel(modelName)
@@ -191,7 +171,7 @@ export class OpenAIInferrence implements LlmInterface {
             userExpertise
         )
 
-        await this.calculateTokensAndCheckLimit(compatibilityMessage, model, isVerbose)
+
 
         return this.callApiAndReturnResult(openai, model, compatibilityMessage, isStreaming, isVerbose)
     }
@@ -200,18 +180,19 @@ export class OpenAIInferrence implements LlmInterface {
         code: string,
         isStreaming: boolean = false,
         isVerbose: boolean = false,
-        userExpertise?: string
-    ): Promise<string | undefined | Stream<ChatCompletionChunk>> {
+        userExpertise?: string,
+        modelName?: string
+    ): Promise<string | undefined | AsyncIterable<string>> {
         // @ts-expect-error Exclude streaming from coverage
         const openai = this.getOpenAiClient(isVerbose)
-        const model = await this.getModel()
+        const model = await this.getModel(modelName)
         const compatibilityMessage = this.createPrompt(
             `${prompts.commonSystemPrompt.prompt}\n${prompts.codeUnderstanding.prompt}`,
             `<Code>${JSON.stringify(code)}</Code> ${prompts.commonMarkdownPrompt.prompt}`,
             isVerbose,
             userExpertise
         )
-        await this.calculateTokensAndCheckLimit(compatibilityMessage, model, isVerbose)
+
 
         return this.callApiAndReturnResult(openai, model, compatibilityMessage, isStreaming, isVerbose)
     }
@@ -220,18 +201,19 @@ export class OpenAIInferrence implements LlmInterface {
         code: string,
         isStreaming: boolean = false,
         isVerbose: boolean = false,
-        userExpertise?: string
-    ): Promise<string | undefined | Stream<ChatCompletionChunk>> {
+        userExpertise?: string,
+        modelName?: string
+    ): Promise<string | undefined | AsyncIterable<string>> {
         // @ts-expect-error Exclude streaming from coverage
         const openai = this.getOpenAiClient(isVerbose)
-        const model = await this.getModel()
+        const model = await this.getModel(modelName)
         const compatibilityMessage = this.createPrompt(
             prompts.interestingCodeParts.prompt,
             `<Code>${JSON.stringify(code)}</Code>  ${prompts.commonMarkdownPrompt.prompt}`,
             isVerbose,
             userExpertise
         )
-        await this.calculateTokensAndCheckLimit(compatibilityMessage, model, isVerbose)
+
         return this.callApiAndReturnResult(openai, model, compatibilityMessage, isStreaming, isVerbose)
     }
 
@@ -241,18 +223,19 @@ export class OpenAIInferrence implements LlmInterface {
         codeInference: string,
         isStreaming: boolean = false,
         isVerbose: boolean = false,
-        userExpertise?: string
-    ): Promise<string | undefined | Stream<ChatCompletionChunk>> {
+        userExpertise?: string,
+        modelName?: string
+    ): Promise<string | undefined | AsyncIterable<string>> {
         // @ts-expect-error Exclude streaming from coverage
         const openai = this.getOpenAiClient(isVerbose)
-        const model = await this.getModel()
+        const model = await this.getModel(modelName)
         const compatibilityMessage = this.createPrompt(
             prompts.readmePrompt.prompt,
             `<DirectoryStructure>${JSON.stringify(directoryStructure)}</DirectoryStructure>\n<DependencyInferrence>${JSON.stringify(dependencyInference)}</DependencyInferrence>\n<CodeInferrence>${JSON.stringify(codeInference)}</CodeInferrence>  ${prompts.commonMarkdownPrompt.prompt}`,
             isVerbose,
             userExpertise
         )
-        await this.calculateTokensAndCheckLimit(compatibilityMessage, model, isVerbose)
+
 
         return this.callApiAndReturnResult(openai, model, compatibilityMessage, isStreaming, isVerbose)
     }
@@ -261,18 +244,19 @@ export class OpenAIInferrence implements LlmInterface {
         monorepoInferrenceInfo: string,
         isStreaming: boolean = false,
         isVerbose: boolean = false,
-        userExpertise?: string
-    ): Promise<string | undefined | Stream<ChatCompletionChunk>> {
+        userExpertise?: string,
+        modelName?: string
+    ): Promise<string | undefined | AsyncIterable<string>> {
         // @ts-expect-error Exclude streaming from coverage
         const openai = this.getOpenAiClient(isVerbose)
-        const model = await this.getModel()
+        const model = await this.getModel(modelName)
         const compatibilityMessage = this.createPrompt(
             prompts.consolidatedInferrenceForMonoRepo.prompt,
             `<MonoRepoInferrence>${JSON.stringify(monorepoInferrenceInfo)}</MonoRepoInferrence>  ${prompts.commonMarkdownPrompt.prompt}`,
             isVerbose,
             userExpertise
         )
-        await this.calculateTokensAndCheckLimit(compatibilityMessage, model, isVerbose)
+
 
         return this.callApiAndReturnResult(openai, model, compatibilityMessage, isStreaming, isVerbose)
     }
@@ -287,6 +271,16 @@ export class OpenAIInferrence implements LlmInterface {
 
         return models.data.sort((a, b) => b.created - a.created).flatMap(model => model.id)
     }
+
+    private async *convertStreamToStringStream(response: Stream<OpenAI.Chat.Completions.ChatCompletionChunk>): AsyncIterable<string> {
+        for await (const chunk of response) {
+            yield chunk.choices[0]?.delta.content || ""
+        }
+
+
+    }
+
 }
+
 
 export default OpenAIInferrence

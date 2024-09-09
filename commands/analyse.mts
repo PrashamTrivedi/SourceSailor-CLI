@@ -250,11 +250,11 @@ async function analyseInterestingCode(directoryStructureWithoutLockFile: FileNod
         let interestingCodeResponse = ""
         if (allowStreaming) {
             spinner.stop().clear()
-            for await (const chunk of interestingCode as Stream<ChatCompletionChunk>) {
-                const message = chunk.choices[0]?.delta.content || ""
+            for await (const chunk of interestingCode as AsyncIterable<string>) {
 
-                process.stdout.write(message)
-                interestingCodeResponse += message
+
+                process.stdout.write(chunk)
+                interestingCodeResponse += chunk
 
             }
             process.stdout.write("\n")
@@ -279,14 +279,14 @@ async function analyzeCodebase(directoryStructureWithoutLockFile: FileNode,
     allowStreaming: boolean, isVerbose: boolean, llmInterface: LlmInterface, userExpertise?: string, modelName?: string) {
     const spinner = ora('Reading Codebase and inferring code...').start()
     try {
+
         const codeInferrence = await llmInterface.inferCode(JSON.stringify(directoryStructureWithoutLockFile), allowStreaming, isVerbose, userExpertise, modelName)
         let codeInferrenceResponse = ""
         if (allowStreaming) {
             spinner.stop().clear()
-            for await (const chunk of codeInferrence as Stream<ChatCompletionChunk>) {
-                const message = chunk.choices[0]?.delta.content || ""
-                process.stdout.write(message)
-                codeInferrenceResponse += message
+            for await (const chunk of codeInferrence as AsyncIterable<string>) {
+                process.stdout.write(chunk)
+                codeInferrenceResponse += chunk
             }
             process.stdout.write("\n")
         } else {
@@ -327,10 +327,10 @@ async function inferDependenciesAndWriteAnalysis(sourceCodePath: string, directo
         let dependencyInferrenceResponse = ""
         if (allowStreaming) {
             spinner.stop().clear()
-            for await (const chunk of dependencyInferrence as Stream<ChatCompletionChunk>) {
-                const message = chunk.choices[0]?.delta.content || ""
-                process.stdout.write(message)
-                dependencyInferrenceResponse += message
+            for await (const chunk of dependencyInferrence as AsyncIterable<string>) {
+
+                process.stdout.write(chunk)
+                dependencyInferrenceResponse += chunk
             }
 
             process.stdout.write("\n")

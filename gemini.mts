@@ -1,7 +1,5 @@
 import {LlmInterface} from "./llmInterface.mjs"
-import {Stream} from "openai/streaming.mjs"
-import {ChatCompletionChunk} from "openai/resources/index.mjs"
-import {GoogleGenerativeAI, GenerativeModel, SchemaType} from "@google/generative-ai"
+import {GoogleGenerativeAI, GenerativeModel, SchemaType, GenerateContentStreamResult} from "@google/generative-ai"
 import {readConfig} from "./utils.mjs"
 import {prompts} from "./prompts.mjs"
 import axios from 'axios'
@@ -103,7 +101,8 @@ export class GeminiInference implements LlmInterface {
         }
     }
 
-    async inferProjectDirectory(directoryStructure: string, allowStreaming: boolean, isVerbose: boolean, userExpertise?: string, modelName?: string): Promise<string | undefined> {
+    async inferProjectDirectory(directoryStructure: string, allowStreaming: boolean,
+        isVerbose: boolean, userExpertise?: string, modelName?: string): Promise<string | undefined> {
         const model = await this.getModel(modelName, `${prompts.commonSystemPrompt.prompt}\n${prompts.rootUnderstanding.prompt}`)
 
         if (prompts.rootUnderstanding.params) {
@@ -161,6 +160,7 @@ export class GeminiInference implements LlmInterface {
             userExpertise
         )
 
+
         const result = await model.generateContent({
             contents: [{role: "user", parts: [{text: prompt}]}]
         })
@@ -171,9 +171,11 @@ export class GeminiInference implements LlmInterface {
         }
 
         return responseText
+
     }
 
-    async inferDependency(dependencyFile: string, workflow: string, allowStreaming: boolean, isVerbose: boolean, userExpertise?: string, modelName?: string): Promise<string | Stream<ChatCompletionChunk>> {
+    async inferDependency(dependencyFile: string, workflow: string, allowStreaming: boolean, isVerbose: boolean,
+        userExpertise?: string, modelName?: string): Promise<string | AsyncIterable<string>> {
         const model = await this.getModel(modelName, `${prompts.commonSystemPrompt.prompt}\n${prompts.dependencyUnderstanding.prompt}`)
         const prompt = this.createPrompt(
             `<DependencyFile>${dependencyFile}</DependencyFile>\n<Workflow>${workflow}</Workflow> ${prompts.commonMarkdownPrompt.prompt}`,
@@ -184,17 +186,24 @@ export class GeminiInference implements LlmInterface {
             console.log(`Model generation config: ${JSON.stringify(model)}`)
         }
 
+        if (allowStreaming) {
+            const streamedResult = await model.generateContentStream({
+                contents: [{role: "user", parts: [{text: prompt}]}]
+            })
+            return this.convertStreamToStringStream(streamedResult)
+        } else {
+            const result = await model.generateContent(prompt)
+            const responseText = result.response.text()
+            if (isVerbose) {
+                console.log("Gemini response:", responseText)
+            }
 
-        const result = await model.generateContent(prompt)
-        const responseText = result.response.text()
-        if (isVerbose) {
-            console.log("Gemini response:", responseText)
+            return responseText
         }
-
-        return responseText
     }
 
-    async inferCode(directoryStructure: string, allowStreaming: boolean, isVerbose: boolean, userExpertise?: string, modelName?: string): Promise<string | Stream<ChatCompletionChunk>> {
+    async inferCode(directoryStructure: string, allowStreaming: boolean, isVerbose: boolean,
+        userExpertise?: string, modelName?: string): Promise<string | AsyncIterable<string>> {
         const model = await this.getModel(modelName, `${prompts.commonSystemPrompt.prompt}\n${prompts.codeUnderstanding.prompt}`)
         const prompt = this.createPrompt(
             `<Code>${directoryStructure}</Code> ${prompts.commonMarkdownPrompt.prompt}`,
@@ -215,7 +224,8 @@ export class GeminiInference implements LlmInterface {
         return responseText
     }
 
-    async inferInterestingCode(directoryStructure: string, allowStreaming: boolean, isVerbose: boolean, userExpertise?: string, modelName?: string): Promise<string | Stream<ChatCompletionChunk>> {
+    async inferInterestingCode(directoryStructure: string, allowStreaming: boolean,
+        isVerbose: boolean, userExpertise?: string, modelName?: string): Promise<string | AsyncIterable<string>> {
         const model = await this.getModel(modelName, prompts.interestingCodeParts.prompt)
         const prompt = this.createPrompt(
             `<Code>${directoryStructure}</Code> ${prompts.commonMarkdownPrompt.prompt}`,
@@ -236,7 +246,8 @@ export class GeminiInference implements LlmInterface {
         return responseText
     }
 
-    async generateReadme(directoryStructure: string, dependencyInference: string, codeInference: string, allowStreaming: boolean, isVerbose: boolean, userExpertise?: string, modelName?: string): Promise<string | Stream<ChatCompletionChunk>> {
+    async generateReadme(directoryStructure: string, dependencyInference: string, codeInference: string,
+        allowStreaming: boolean, isVerbose: boolean, userExpertise?: string, modelName?: string): Promise<string | AsyncIterable<string>> {
         const model = await this.getModel(modelName, prompts.readmePrompt.prompt)
         const prompt = this.createPrompt(
             `<DirectoryStructure>${directoryStructure}</DirectoryStructure>\n<DependencyInference>${dependencyInference}</DependencyInference>\n<CodeInference>${codeInference}</CodeInference> ${prompts.commonMarkdownPrompt.prompt}`,
@@ -255,6 +266,15 @@ export class GeminiInference implements LlmInterface {
         }
 
         return responseText
+    }
+
+
+    private async *convertStreamToStringStream(response: GenerateContentStreamResult): AsyncIterable<string> {
+        for await (const chunk of response.stream) {
+            yield chunk.text() ?? ""
+        }
+
+
     }
 }
 
