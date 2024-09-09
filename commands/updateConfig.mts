@@ -31,6 +31,11 @@ export function builder(yargs: Argv) {
         alias: 'g',
         type: 'string',
     })
+    yargs.option('anthropicApiKey', {
+        describe: 'Anthropic API Key',
+        alias: 'n',
+        type: 'string',
+    })
 
     return yargs
 }
@@ -53,6 +58,9 @@ export function handler(argv: Arguments) {
     }
     if (argv.geminiApiKey) {
         configData.GEMINI_API_KEY = argv.geminiApiKey
+    }
+    if (argv.anthropicApiKey) {
+        configData.ANTHROPIC_API_KEY = argv.anthropicApiKey
     }
 
     fs.writeFileSync(configFile, JSON.stringify(configData))

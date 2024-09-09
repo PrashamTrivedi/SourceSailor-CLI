@@ -1,6 +1,7 @@
 import {LlmInterface} from "./llmInterface.mjs"
 import OpenAIInferrence from "./openai.mjs"
 import GeminiInference from "./gemini.mjs"
+import AnthropicInterface from "./anthropic.mjs"
 import {readConfig} from "./utils.mjs"
 
 class ModelUtils {
@@ -21,13 +22,16 @@ class ModelUtils {
     public async initializeModels(): Promise<void> {
         const openai = new OpenAIInferrence()
         const gemini = new GeminiInference()
+        const anthropic = new AnthropicInterface()
 
         const openaiModels = await openai.listModels(false)
         const geminiModels = await gemini.listModels(false)
+        const anthropicModels = await anthropic.listModels(false)
 
-        this.modelList = [...openaiModels, ...geminiModels]
+        this.modelList = [...openaiModels, ...geminiModels, ...anthropicModels]
         this.modelProviders.set('OpenAI', openaiModels)
         this.modelProviders.set('Gemini', geminiModels)
+        this.modelProviders.set('Anthropic', anthropicModels)
 
         for (const model of openaiModels) {
             this.modelCache.set(model, openai)
@@ -35,6 +39,10 @@ class ModelUtils {
 
         for (const model of geminiModels) {
             this.modelCache.set(model, gemini)
+        }
+
+        for (const model of anthropicModels) {
+            this.modelCache.set(model, anthropic)
         }
     }
 

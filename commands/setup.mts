@@ -22,6 +22,10 @@ export function builder(yargs: Argv) {
         type: 'string',
         default: 'gpt-3.5-turbo'
     })
+    yargs.option('anthropicApiKey', {
+        describe: 'Anthropic API Key',
+        type: 'string'
+    })
     yargs.option('analysisDir', {
         alias: 'a',
         describe: 'Root directory to write the analysis. Default home directory. Use p to use the codebase directory.',
@@ -51,7 +55,8 @@ export function handler(argv: Arguments) {
     const config = {
         OPENAI_API_KEY: argv.apiKey || configData.OPENAI_API_KEY,
         DEFAULT_OPENAI_MODEL: argv.model || configData.DEFAULT_OPENAI_MODEL,
-        ANALYSIS_DIR: argv.analysisDir || configData.ANALYSIS_DIR
+        ANALYSIS_DIR: argv.analysisDir || configData.ANALYSIS_DIR,
+        ANTHROPIC_API_KEY: argv.anthropicApiKey || configData.ANTHROPIC_API_KEY
     }
 
 
