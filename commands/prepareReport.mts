@@ -1,6 +1,6 @@
 
 import path from 'path'
-import {getAnalysis, readConfig} from '../utils.mjs'
+import {getAnalysis, readConfig, writeAnalysis} from '../utils.mjs'
 import ModelUtils from "../modelUtils.mjs"
 import {LlmInterface} from "../llmInterface.mjs"
 import ora from "ora"
@@ -90,11 +90,12 @@ export async function handler(argv: Arguments) {
         let readmeResponse = ""
         if (allowStreaming) {
             spinner.stop().clear()
-            for await (const chunk of (report as Stream<ChatCompletionChunk>)) {
-                const message = chunk.choices[0]?.delta.content || ""
-                process.stdout.write(message)
-                readmeResponse += message
+            for await (const chunk of report as AsyncIterable<string>) {
+
+                process.stdout.write(chunk)
+                readmeResponse += chunk
             }
+
             process.stdout.write("\n")
 
         } else {
@@ -103,6 +104,7 @@ export async function handler(argv: Arguments) {
 
             readmeResponse = reportAsText
         }
+        writeAnalysis(dirPath, "inferredReadme", readmeResponse, isProjectRoot)
     }
 
     if (!config.userExpertise) {

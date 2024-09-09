@@ -271,7 +271,7 @@ export class GeminiInference implements LlmInterface {
 
     private async *convertStreamToStringStream(response: GenerateContentStreamResult): AsyncIterable<string> {
         for await (const chunk of response.stream) {
-            yield chunk.text() ?? ""
+            yield chunk.text() || ""
         }
 
 

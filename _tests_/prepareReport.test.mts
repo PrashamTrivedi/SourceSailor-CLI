@@ -103,8 +103,8 @@ describe('prepareReport command', () => {
       codeInferrence: 'mock code inference',
     }
     const mockStreamChunks = [
-      {choices: [{delta: {content: 'Chunk 1'}}]},
-      {choices: [{delta: {content: 'Chunk 2'}}]},
+      'Chunk 1',
+      'Chunk 2',
     ]
 
     vi.mocked(utils.readConfig).mockReturnValue({ANALYSIS_DIR: 'test-dir'})
