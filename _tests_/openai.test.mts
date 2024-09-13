@@ -2,7 +2,7 @@
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest'
 import OpenAI from 'openai'
 import OpenAIInferrence from "../openai.mjs"
-import { Stream } from 'openai/streaming'
+import {Stream} from 'openai/streaming'
 
 // Mock OpenAI
 vi.mock('openai')
@@ -11,15 +11,15 @@ vi.mock('openai')
 vi.spyOn(console, 'log').mockImplementation(() => { })
 
 // Mock Stream
-class MockStream extends Stream<OpenAI.Chat.Completions.ChatCompletionChunk> {
-    private chunks: string[];
+class MockStream {
+    private chunks: string[]
     constructor(chunks: string[]) {
-        super();
-        this.chunks = chunks;
+
+        this.chunks = chunks
     }
     async *[Symbol.asyncIterator]() {
         for (const chunk of this.chunks) {
-            yield { choices: [{ delta: { content: chunk } }] } as OpenAI.Chat.Completions.ChatCompletionChunk;
+            yield {choices: [{delta: {content: chunk}}]} as OpenAI.Chat.Completions.ChatCompletionChunk
         }
     }
 }
@@ -175,7 +175,7 @@ describe('OpenAIInferrence', () => {
             const result = await openAIInferrence.inferDependency('{"dependencies": {}}', 'test', true, false)
             expect(result).toBeInstanceOf(Object)
             expect(Symbol.asyncIterator in (result as any)).toBe(true)
-            
+
             let streamedContent = ''
             for await (const chunk of result as AsyncIterable<string>) {
                 streamedContent += chunk
@@ -220,7 +220,7 @@ describe('OpenAIInferrence', () => {
             const result = await openAIInferrence.inferCode('const x = 5;', true, false)
             expect(result).toBeInstanceOf(Object)
             expect(Symbol.asyncIterator in (result as any)).toBe(true)
-            
+
             let streamedContent = ''
             for await (const chunk of result as AsyncIterable<string>) {
                 streamedContent += chunk
@@ -262,7 +262,7 @@ describe('OpenAIInferrence', () => {
             const result = await openAIInferrence.inferInterestingCode('class AdvancedComponent { /* ... */ }', true, false)
             expect(result).toBeInstanceOf(Object)
             expect(Symbol.asyncIterator in (result as any)).toBe(true)
-            
+
             let streamedContent = ''
             if (result) {
                 for await (const chunk of result as AsyncIterable<string>) {
@@ -339,8 +339,12 @@ describe('OpenAIInferrence', () => {
 
             const result = await openAIInferrence.generateReadme('{}', '{}', '{}', true, false)
             expect(result).toBeInstanceOf(Object)
-            expect(Symbol.asyncIterator in result).toBe(true)
-            
+            if (result && typeof result !== 'string' && Symbol.asyncIterator in result) {
+                expect(Symbol.asyncIterator in result).toBe(true)
+            } else {
+                throw new Error('Result is not an AsyncIterable<string>')
+            }
+
             let streamedContent = ''
             for await (const chunk of result as AsyncIterable<string>) {
                 streamedContent += chunk
@@ -402,8 +406,12 @@ describe('OpenAIInferrence', () => {
 
             const result = await openAIInferrence.generateMonorepoReadme('{}', true, false)
             expect(result).toBeInstanceOf(Object)
-            expect(Symbol.asyncIterator in result).toBe(true)
-            
+            if (result && typeof result !== 'string' && Symbol.asyncIterator in result) {
+                expect(Symbol.asyncIterator in result).toBe(true)
+            } else {
+                throw new Error('Result is not an AsyncIterable<string>')
+            }
+
             let streamedContent = ''
             for await (const chunk of result as AsyncIterable<string>) {
                 streamedContent += chunk

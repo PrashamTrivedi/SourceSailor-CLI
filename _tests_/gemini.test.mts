@@ -157,7 +157,7 @@ describe('GeminiInference', () => {
             })
 
             const result = await geminiInference.inferDependency('{"dependencies": {}}', 'test', true, false)
-            expect(typeof result[Symbol.asyncIterator]).toBe('function')
+            expect(typeof (result as AsyncIterable<string>)[Symbol.asyncIterator]).toBe('function')
             
             let streamedResult = ''
             for await (const chunk of result as AsyncIterable<string>) {
