@@ -55,14 +55,16 @@ describe("Setup Command Tests", () => {
 
     it("writes config file with provided values", () => {
         const parser = yargsSetup.command({command, describe: commandDescribe, builder, handler})
-        parser.parse("setup --apiKey test-key --model gpt-4 --analysisDir /custom/dir")
+        parser.parse("setup --apiKey test-key --model gpt-4 --analysisDir /custom/dir --anthropicApiKey anthropic-key --geminiApiKey gemini-key")
 
         expect(fs.writeFileSync).toHaveBeenCalledWith(
             mockConfigFile,
             JSON.stringify({
                 OPENAI_API_KEY: 'test-key',
                 DEFAULT_OPENAI_MODEL: 'gpt-4',
-                ANALYSIS_DIR: '/custom/dir'
+                ANALYSIS_DIR: '/custom/dir',
+                ANTHROPIC_API_KEY: 'anthropic-key',
+                GEMINI_API_KEY: 'gemini-key'
             })
         )
     })
