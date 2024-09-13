@@ -1,17 +1,20 @@
 import fs from 'fs'
 import os from 'os'
 import path from 'path'
+import {Arguments} from 'yargs'
+import {Argv} from 'yargs'
+
 
 export const command = 'setup [apiKey|k] [model|m]'
 
 export const describe = 'Setup OpenAI API Key and default model'
 
-import { Argv } from 'yargs';
 
 export function builder(yargs: Argv) {
 
     yargs.option('apiKey', {
         describe: 'OpenAI API Key',
+        alias: 'k',
         type: 'string',
         required: true,
         demandOption: true
@@ -24,6 +27,12 @@ export function builder(yargs: Argv) {
     })
     yargs.option('anthropicApiKey', {
         describe: 'Anthropic API Key',
+        alias: 'n',
+        type: 'string'
+    })
+    yargs.option('geminiApiKey', {
+        describe: 'Gemini API Key',
+        alias: 'g',
         type: 'string'
     })
     yargs.option('analysisDir', {
@@ -35,8 +44,6 @@ export function builder(yargs: Argv) {
 
     return yargs
 }
-
-import { Arguments } from 'yargs';
 
 export function handler(argv: Arguments) {
     console.log(`Setting up OpenAI API Key: ${argv.apiKey} and default model: ${argv.model}`)
@@ -56,7 +63,8 @@ export function handler(argv: Arguments) {
         OPENAI_API_KEY: argv.apiKey || configData.OPENAI_API_KEY,
         DEFAULT_OPENAI_MODEL: argv.model || configData.DEFAULT_OPENAI_MODEL,
         ANALYSIS_DIR: argv.analysisDir || configData.ANALYSIS_DIR,
-        ANTHROPIC_API_KEY: argv.anthropicApiKey || configData.ANTHROPIC_API_KEY
+        ANTHROPIC_API_KEY: argv.anthropicApiKey || configData.ANTHROPIC_API_KEY,
+        GEMINI_API_KEY: argv.geminiApiKey || configData.GEMINI_API_KEY
     }
 
 

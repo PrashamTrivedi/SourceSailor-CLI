@@ -7,7 +7,12 @@ export const describe = 'List all available Configs'
 import { Argv } from 'yargs';
 
 export function builder(yargs: Argv) {
-    return yargs
+    return yargs.option('verbose', {
+        alias: 'v',
+        type: 'boolean',
+        description: 'Show detailed configuration information',
+        default: false
+    })
 }
 
 import { Arguments } from 'yargs';

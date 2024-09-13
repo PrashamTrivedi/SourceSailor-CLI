@@ -13,7 +13,7 @@ import {Argv} from 'yargs'
 export function builder(yargs: Argv) {
     yargs.option('apiKey', {
         describe: 'OpenAI API Key',
-        alias: 'o',
+        alias: 'k',
         type: 'string',
     })
     yargs.option('model', {
