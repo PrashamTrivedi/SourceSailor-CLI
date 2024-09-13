@@ -2,12 +2,27 @@
 import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest'
 import OpenAI from 'openai'
 import OpenAIInferrence from "../openai.mjs"
+import { Stream } from 'openai/streaming'
 
 // Mock OpenAI
 vi.mock('openai')
 
 // Mock console.log to prevent output during tests
 vi.spyOn(console, 'log').mockImplementation(() => { })
+
+// Mock Stream
+class MockStream extends Stream<OpenAI.Chat.Completions.ChatCompletionChunk> {
+    private chunks: string[];
+    constructor(chunks: string[]) {
+        super();
+        this.chunks = chunks;
+    }
+    async *[Symbol.asyncIterator]() {
+        for (const chunk of this.chunks) {
+            yield { choices: [{ delta: { content: chunk } }] } as OpenAI.Chat.Completions.ChatCompletionChunk;
+        }
+    }
+}
 
 describe('OpenAIInferrence', () => {
     let openAIInferrence: OpenAIInferrence
@@ -152,14 +167,21 @@ describe('OpenAIInferrence', () => {
             expect(result).toBe('Dependency inference')
         })
 
-        // it('should handle streaming responses', async () => {
-        //     const mockStream = new Stream()
-        //     mockOpenAI.chat.completions.create.mockResolvedValue(mockStream)
-        //     mockOpenAI.models.list.mockResolvedValue({data: [{id: 'gpt-4'}]})
+        it('should handle streaming responses', async () => {
+            const mockStream = new MockStream(['Dependency', ' inference', ' streaming'])
+            mockOpenAI.chat.completions.create.mockResolvedValue(mockStream)
+            mockOpenAI.models.list.mockResolvedValue({data: [{id: 'gpt-4'}]})
 
-        //     const result = await openAIInferrence.inferDependency('{"dependencies": {}}', 'test', true, true, false)
-        //     expect(result).toBe(mockStream)
-        // })
+            const result = await openAIInferrence.inferDependency('{"dependencies": {}}', 'test', true, false)
+            expect(result).toBeInstanceOf(Object)
+            expect(Symbol.asyncIterator in (result as any)).toBe(true)
+            
+            let streamedContent = ''
+            for await (const chunk of result as AsyncIterable<string>) {
+                streamedContent += chunk
+            }
+            expect(streamedContent).toBe('Dependency inference streaming')
+        })
 
         it('should handle empty dependency file', async () => {
             const mockResponse = {
@@ -190,14 +212,21 @@ describe('OpenAIInferrence', () => {
             expect(result).toBe('Code inference')
         })
 
-        // it('should handle streaming responses', async () => {
-        //     const mockStream = new Stream()
-        //     mockOpenAI.chat.completions.create.mockResolvedValue(mockStream)
-        //     mockOpenAI.models.list.mockResolvedValue({data: [{id: 'gpt-4'}]})
+        it('should handle streaming responses', async () => {
+            const mockStream = new MockStream(['Code', ' inference', ' streaming'])
+            mockOpenAI.chat.completions.create.mockResolvedValue(mockStream)
+            mockOpenAI.models.list.mockResolvedValue({data: [{id: 'gpt-4'}]})
 
-        //     const result = await openAIInferrence.inferCode('const x = 5;', true, true, false)
-        //     expect(result).toBe(mockStream)
-        // })
+            const result = await openAIInferrence.inferCode('const x = 5;', true, false)
+            expect(result).toBeInstanceOf(Object)
+            expect(Symbol.asyncIterator in (result as any)).toBe(true)
+            
+            let streamedContent = ''
+            for await (const chunk of result as AsyncIterable<string>) {
+                streamedContent += chunk
+            }
+            expect(streamedContent).toBe('Code inference streaming')
+        })
 
 
         it('should handle empty code input', async () => {
@@ -225,14 +254,23 @@ describe('OpenAIInferrence', () => {
             expect(result).toBe('Interesting code parts')
         })
 
-        // it('should handle streaming responses', async () => {
-        //     const mockStream = new Stream()
-        //     mockOpenAI.chat.completions.create.mockResolvedValue(mockStream)
-        //     mockOpenAI.models.list.mockResolvedValue({data: [{id: 'gpt-4'}]})
+        it('should handle streaming responses', async () => {
+            const mockStream = new MockStream(['Interesting', ' code', ' parts', ' streaming'])
+            mockOpenAI.chat.completions.create.mockResolvedValue(mockStream)
+            mockOpenAI.models.list.mockResolvedValue({data: [{id: 'gpt-4'}]})
 
-        //     const result = await openAIInferrence.inferInterestingCode('class AdvancedComponent { /* ... */ }', true, true, false)
-        //     expect(result).toBe(mockStream)
-        // })
+            const result = await openAIInferrence.inferInterestingCode('class AdvancedComponent { /* ... */ }', true, false)
+            expect(result).toBeInstanceOf(Object)
+            expect(Symbol.asyncIterator in (result as any)).toBe(true)
+            
+            let streamedContent = ''
+            if (result) {
+                for await (const chunk of result as AsyncIterable<string>) {
+                    streamedContent += chunk
+                }
+            }
+            expect(streamedContent).toBe('Interesting code parts streaming')
+        })
 
         it('should handle code with no particularly interesting parts', async () => {
             const mockResponse = {
@@ -294,14 +332,21 @@ describe('OpenAIInferrence', () => {
         })
 
 
-        // it('should handle streaming responses', async () => {
-        //     const mockStream = new Stream()
-        //     mockOpenAI.chat.completions.create.mockResolvedValue(mockStream)
-        //     mockOpenAI.models.list.mockResolvedValue({data: [{id: 'gpt-4'}]})
+        it('should handle streaming responses', async () => {
+            const mockStream = new MockStream(['Generated', ' README', ' content', ' streaming'])
+            mockOpenAI.chat.completions.create.mockResolvedValue(mockStream)
+            mockOpenAI.models.list.mockResolvedValue({data: [{id: 'gpt-4'}]})
 
-        //     const result = await openAIInferrence.generateReadme('{}', '{}', '{}', true, true, false)
-        //     expect(result).toBe(mockStream)
-        // })
+            const result = await openAIInferrence.generateReadme('{}', '{}', '{}', true, false)
+            expect(result).toBeInstanceOf(Object)
+            expect(Symbol.asyncIterator in result).toBe(true)
+            
+            let streamedContent = ''
+            for await (const chunk of result as AsyncIterable<string>) {
+                streamedContent += chunk
+            }
+            expect(streamedContent).toBe('Generated README content streaming')
+        })
     })
 
     describe('generateMonorepoReadme', () => {
@@ -350,14 +395,21 @@ describe('OpenAIInferrence', () => {
             expect(result).toBe('README for complex monorepo')
         })
 
-        // it('should handle streaming responses', async () => {
-        //     const mockStream = new Stream()
-        //     mockOpenAI.chat.completions.create.mockResolvedValue(mockStream)
-        //     mockOpenAI.models.list.mockResolvedValue({data: [{id: 'gpt-4'}]})
+        it('should handle streaming responses', async () => {
+            const mockStream = new MockStream(['Generated', ' Monorepo', ' README', ' content', ' streaming'])
+            mockOpenAI.chat.completions.create.mockResolvedValue(mockStream)
+            mockOpenAI.models.list.mockResolvedValue({data: [{id: 'gpt-4'}]})
 
-        //     const result = await openAIInferrence.generateMonorepoReadme('{}', true, true, false)
-        //     expect(result).toBe(mockStream)
-        // })
+            const result = await openAIInferrence.generateMonorepoReadme('{}', true, false)
+            expect(result).toBeInstanceOf(Object)
+            expect(Symbol.asyncIterator in result).toBe(true)
+            
+            let streamedContent = ''
+            for await (const chunk of result as AsyncIterable<string>) {
+                streamedContent += chunk
+            }
+            expect(streamedContent).toBe('Generated Monorepo README content streaming')
+        })
     })
 
     describe('listModels', () => {
