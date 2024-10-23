@@ -12,11 +12,15 @@ const modelMapping = {
     "claude-3-haiku": 'claude-3-haiku-20240307',
     'claude-3-sonnet': 'claude-3-sonnet-20240229',
     'claude-3-opus': 'claude-3-opus-20240229',
-    'claude-3.5-sonnet': 'claude-3-5-sonnet-20240620',
+    'claude-3.5-sonnet': 'claude-3-5-sonnet-20241022',
+    'claude-3.5-sonnet-legacy': 'claude-3-5-sonnet-20240620',
+    'claude-3.5-sonnet-latest': 'claude-3-5-sonnet-latest',
     'haiku-3': 'claude-3-haiku-20240307',
     'sonnet-3': 'claude-3-sonnet-20240229',
     'opus-3': 'claude-3-opus-20240229',
-    'sonnet-3.5': 'claude-3-5-sonnet-20240620',
+    'sonnet-3.5': 'claude-3-5-sonnet-20241022',
+    'sonnet-3.5-legacy': 'claude-3-5-sonnet-20240620',
+    'sonnet-3.5-latest': 'claude-3-5-sonnet-latest',
 }
 
 export class AnthropicInterface implements LlmInterface {
