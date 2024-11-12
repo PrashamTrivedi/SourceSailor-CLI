@@ -6,8 +6,7 @@ import fs from 'fs'
 import {addAnalysisInGitIgnore, readConfig, writeAnalysis, writeError} from "../utils.mjs"
 import ora from 'ora'
 import {Arguments} from 'yargs'
-import {ChatCompletionChunk} from "openai/resources/index.mjs"
-import {Stream} from "openai/streaming.mjs"
+
 import chalk from "chalk"
 import {confirm} from '@inquirer/prompts'
 import {handler as setExpertiseHandler} from './setExpertise.mjs'
@@ -77,21 +76,29 @@ export async function handler(argv: Arguments) {
     const ignore = argv.ignore as string[] || argv.i as string[] || []
     const modelName = argv.model as string || argv.m as string
 
-
     const config = readConfig()
 
     if (isVerbose) {
         console.log(`Analyse the given directory structure to understand the project structure and dependencies: ${argv.path}`)
-
         console.log(`Using model: ${modelName || config.DEFAULT_OPENAI_MODEL}`)
     }
 
     const rootDir = config.ANALYSIS_DIR
     const userExpertise = JSON.stringify(config.userExpertise)
 
-    const projectName = argv.path as string
+    // Handle current directory case
+    const inputPath = argv.path as string
+    const projectName = inputPath === '.' ? process.cwd().split('/').pop() ?? "" : inputPath
+
+    // Log current directory name if analyzing current directory
+    if (inputPath === '.') {
+        console.log(`Analyzing current directory: ${projectName}`)
+    }
 
     const isProjectRoot = rootDir === 'p'
+    if (isVerbose) {
+        console.log({rootDir, isProjectRoot, projectName})
+    }
 
     const modelUtils = ModelUtils.getInstance()
     await modelUtils.initializeModels()
@@ -107,14 +114,24 @@ export async function handler(argv: Arguments) {
     }
     console.log(`Analysing ${chalk.redBright(projectName)}'s file structure to getting started.`)
     // const defaultSpinner = ora().start()
-    const path = argv.path as string
+    const sourceCodePath = inputPath
     const isRoot = true
-    const sourceCodePath = argv.path as string
     const dirToWriteAnalysis = isProjectRoot ? `${sourceCodePath}/.SourceSailor` : `${rootDir}/.SourceSailor/${projectName}`
+if (isVerbose) {
+        console.log({sourceCodePath, isProjectRoot, isRoot, dirToWriteAnalysis})
+    }
 
-
-    const {directoryInferrence, directoryStructureWithContent} = await analyseDirectoryStructure(path, isVerbose, isRoot,
-        dirToWriteAnalysis, isProjectRoot, ignore, llmInterface, userExpertise, selectedModelName)
+    const {directoryInferrence, directoryStructureWithContent} = await analyseDirectoryStructure(
+        sourceCodePath,  // Use sourceCodePath instead of undefined path
+        isVerbose,
+        isRoot,
+        dirToWriteAnalysis,
+        isProjectRoot,
+        ignore,
+        llmInterface,
+        userExpertise,
+        selectedModelName
+    )
 
     if (isVerbose) {
         console.log({project: argv.path, directoryInferrence})

@@ -10,12 +10,16 @@ type modelType = keyof typeof modelMapping
 
 const modelMapping = {
     "claude-3-haiku": 'claude-3-haiku-20240307',
+    "claude-3.5-haiku": 'claude-3-5-haiku-20241022',
+    "claude-3.5-haiku-latest": 'claude-3-5-haiku-latest',
     'claude-3-sonnet': 'claude-3-sonnet-20240229',
     'claude-3-opus': 'claude-3-opus-20240229',
     'claude-3.5-sonnet': 'claude-3-5-sonnet-20241022',
     'claude-3.5-sonnet-legacy': 'claude-3-5-sonnet-20240620',
     'claude-3.5-sonnet-latest': 'claude-3-5-sonnet-latest',
     'haiku-3': 'claude-3-haiku-20240307',
+    'haiku-3.5': 'claude-3-5-haiku-20241022',
+    'haiku-3.5-latest': 'claude-3-5-haiku-latest',
     'sonnet-3': 'claude-3-sonnet-20240229',
     'opus-3': 'claude-3-opus-20240229',
     'sonnet-3.5': 'claude-3-5-sonnet-20241022',

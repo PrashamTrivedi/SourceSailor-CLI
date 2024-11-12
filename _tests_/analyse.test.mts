@@ -8,6 +8,16 @@ import fs from 'fs'
 import ora from 'ora'
 import * as inquirer from '@inquirer/prompts'
 import * as setExpertise from '../commands/setExpertise.mjs'
+import chalk from "chalk"
+
+// Remove this mock as it won't work correctly
+// const mockProcessCwd = vi.fn(() => '/test/current-project')
+// vi.mock('process', () => ({
+//   default: {
+//     cwd: mockProcessCwd
+//   },
+//   cwd: mockProcessCwd
+// }))
 
 vi.mock('../directoryProcessor.mjs')
 vi.mock('../modelUtils.mjs')
@@ -20,6 +30,10 @@ vi.mock('../commands/setExpertise.mjs')
 describe('analyse command', () => {
   beforeEach(() => {
     vi.resetAllMocks()
+    // Mock process.cwd
+    const mockCwd = vi.spyOn(process, 'cwd')
+    mockCwd.mockReturnValue('/test/current-project')
+
     vi.mocked(ora).mockReturnValue({
       start: vi.fn().mockReturnThis(),
       stop: vi.fn().mockReturnThis(),
@@ -33,6 +47,7 @@ describe('analyse command', () => {
 
   afterEach(() => {
     vi.resetAllMocks()
+    vi.restoreAllMocks() // Add this to cleanup process.cwd mock
   })
 
   it('should analyze a non-monorepo project correctly', async () => {
@@ -281,5 +296,62 @@ describe('analyse command', () => {
       default: true
     })
     expect(setExpertise.handler).toHaveBeenCalled()
+  })
+
+  it('should handle current directory analysis correctly', async () => {
+    const mockArgv = {
+      path: '.',
+      verbose: false,
+      openai: true,
+      streaming: false,
+      ignore: [],
+    }
+
+    const mockDirectoryStructure = {
+      name: 'current-project',
+      children: [
+        {name: 'src', children: []},
+        {name: 'package.json', content: '{}'},
+      ],
+    }
+
+    const mockDirectoryInference = {
+      isMonorepo: false,
+      workflow: 'nodejs',
+      dependenciesFile: 'package.json',
+      programmingLanguage: 'javascript',
+    }
+
+    vi.mocked(directoryProcessor.getDirStructure).mockResolvedValue(mockDirectoryStructure as any)
+    const mockModelUtils = {
+      initializeModels: vi.fn().mockResolvedValue(undefined),
+      getLlmInterface: vi.fn().mockReturnValue({
+        getName: vi.fn().mockReturnValue('Mocked model'),
+        inferProjectDirectory: vi.fn().mockResolvedValue(JSON.stringify(mockDirectoryInference)),
+        inferCode: vi.fn().mockResolvedValue('Mocked code inference'),
+        inferInterestingCode: vi.fn().mockResolvedValue('Mocked interesting code'),
+        inferDependency: vi.fn().mockResolvedValue('Mocked dependency inference'),
+      }),
+    }
+    vi.mocked(ModelUtils.getInstance).mockReturnValue(mockModelUtils as any)
+    vi.mocked(utils.readConfig).mockReturnValue({ANALYSIS_DIR: '/test'} as any)
+    vi.mocked(fs.readFileSync).mockReturnValue('{}')
+
+    const consoleSpy = vi.spyOn(console, 'log')
+
+    await handler(mockArgv as any)
+
+    expect(consoleSpy).toHaveBeenCalledWith('Analyzing current directory: current-project')
+    expect(consoleSpy).toHaveBeenCalledWith(`Analysing ${chalk.redBright('current-project')}'s file structure to getting started.`)
+    expect(directoryProcessor.getDirStructure).toHaveBeenCalledWith('.', [], false)
+    expect(utils.writeAnalysis).toHaveBeenCalledWith(
+      '/test/.SourceSailor/current-project',
+      'directoryStructure',
+      expect.any(Object),
+      true,
+      false
+    )
+
+    consoleSpy.mockRestore()
   })
 })

@@ -52,7 +52,24 @@ describe('AnthropicInterface', () => {
 
     describe('listModels', () => {
         it('should return a list of available models', async () => {
-            const expectedModels = ['claude-3-haiku', 'claude-3-sonnet', 'claude-3-opus', 'claude-3.5-sonnet', 'haiku-3', 'sonnet-3', 'opus-3', 'sonnet-3.5']
+            const expectedModels = [
+                'claude-3-haiku',
+                'claude-3.5-haiku',
+                'claude-3.5-haiku-latest',
+                'claude-3-sonnet',
+                'claude-3-opus',
+                'claude-3.5-sonnet',
+                'claude-3.5-sonnet-legacy',
+                'claude-3.5-sonnet-latest',
+                'haiku-3',
+                'haiku-3.5',
+                'haiku-3.5-latest',
+                'sonnet-3',
+                'opus-3',
+                'sonnet-3.5',
+                'sonnet-3.5-legacy',
+                'sonnet-3.5-latest'
+            ]
             const result = await anthropicInterface.listModels(false)
             expect(result).toEqual(expectedModels)
         })
