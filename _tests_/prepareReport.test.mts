@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import {describe, it, expect, vi, beforeEach} from 'vitest'
+import {describe, it, expect, vi, beforeEach, afterEach} from 'vitest'
 import {handler} from '../commands/prepareReport.mjs'
 import * as utils from '../utils.mjs'
 import ModelUtils from '../modelUtils.mjs'
@@ -30,6 +30,14 @@ describe('prepareReport command', () => {
     vi.resetAllMocks()
     vi.mocked(inquirer.confirm).mockResolvedValue(false)
     vi.mocked(setExpertise.handler).mockResolvedValue(undefined)
+    // Add mock for process.cwd
+    const mockCwd = vi.spyOn(process, 'cwd')
+    mockCwd.mockReturnValue('/test/current-project')
+  })
+
+  afterEach(() => {
+    vi.resetAllMocks()
+    vi.restoreAllMocks() // Add this to cleanup process.cwd mock
   })
 
   it('should fail if no analysis is found', async () => {
@@ -255,5 +263,74 @@ describe('prepareReport command', () => {
 
     expect(inquirer.confirm).not.toHaveBeenCalled()
     expect(setExpertise.handler).not.toHaveBeenCalled()
+  })
+
+  it('should handle current directory analysis correctly', async () => {
+    const mockAnalysis = {
+      directoryStructure: 'mock directory structure',
+      dependencyInference: 'mock dependency inference',
+      codeInferrence: 'mock code inference',
+    }
+    const mockReport = 'Generated README content'
+
+    // Mock config with a specific ANALYSIS_DIR
+    vi.mocked(utils.readConfig).mockReturnValue({
+      ANALYSIS_DIR: '/test/analysis',
+      DEFAULT_OPENAI_MODEL: 'test-model'
+    })
+    vi.mocked(utils.getAnalysis).mockReturnValue(mockAnalysis)
+    const mockModelUtils = {
+      initializeModels: vi.fn().mockResolvedValue(undefined),
+      getLlmInterface: vi.fn().mockReturnValue({
+        getName: vi.fn().mockReturnValue('Mocked model'),
+        generateReadme: vi.fn().mockResolvedValue(mockReport),
+      }),
+    }
+    vi.mocked(ModelUtils.getInstance).mockReturnValue(mockModelUtils as any)
+
+    const mockSpinner = {
+      start: vi.fn().mockReturnThis(),
+      stopAndPersist: vi.fn(),
+    }
+    vi.mocked(ora).mockReturnValue(mockSpinner as any)
+
+    const consoleSpy = vi.spyOn(console, 'log')
+
+    await handler({path: '.', verbose: true} as any)
+
+    // Verify the analysis path is constructed correctly
+    // When processing current directory, it should be rootDir/.SourceSailor/current-project
+    expect(utils.getAnalysis).toHaveBeenCalledWith(
+      '/test/analysis/.SourceSailor/current-project',
+      false  // isProjectRoot should be false for current directory
+    )
+
+    // Verify that if verbose is enabled, we log the correct path
+    expect(consoleSpy).toHaveBeenCalledWith({
+      dirPath: '/test/analysis/.SourceSailor/current-project',
+      isProjectRoot: false,
+      projectDir: '.'
+    })
+
+    // Verify the report generation
+    expect(mockModelUtils.getLlmInterface().generateReadme).toHaveBeenCalledWith(
+      'mock directory structure',
+      'mock dependency inference',
+      'mock code inference',
+      false,
+      true,
+      undefined,
+      "test-model"
+    )
+
+    // Verify writing the analysis uses the correct path
+    expect(utils.writeAnalysis).toHaveBeenCalledWith(
+      '/test/analysis/.SourceSailor/current-project',
+      'inferredReadme',
+      mockReport,
+      false  // isProjectRoot should be false
+    )
+
+    consoleSpy.mockRestore()
   })
 })

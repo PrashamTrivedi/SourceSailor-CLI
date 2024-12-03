@@ -1,4 +1,3 @@
-
 import path from 'path'
 import {getAnalysis, readConfig, writeAnalysis} from '../utils.mjs'
 import ModelUtils from "../modelUtils.mjs"
@@ -56,14 +55,22 @@ export async function handler(argv: Arguments) {
     const rootDir = config.ANALYSIS_DIR
     const selectedModelName = modelName || config.DEFAULT_OPENAI_MODEL
     const userExpertise = JSON.stringify(config.userExpertise)
+    
     if (isVerbose) {
         console.log(`Using model: ${selectedModelName}`)
     }
 
+    // Handle current directory case
+    const isCurrentDir = projectDir === '.'
+    const projectName = isCurrentDir ? process.cwd().split('/').pop() ?? "" : projectDir
+
     const isProjectRoot = rootDir === 'p'
-    const dirPath = isProjectRoot ? projectDir : path.join(rootDir, '.SourceSailor', projectDir)
+    const dirPath = isProjectRoot 
+        ? projectDir 
+        : path.join(rootDir, '.SourceSailor', projectName)
+
     if (isVerbose) {
-        console.log({dirPath, isProjectRoot})
+        console.log({dirPath, isProjectRoot, projectDir})
     }
 
     const spinner = ora('Preparing report').start()
